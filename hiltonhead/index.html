@@ -1,3 +1,5 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);-webkit-text-size-adjust:100%;text-size-adjust:100%}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
 <title>WittWeek</title>
 <meta name="theme-color" content="#0B4F5C">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -354,6 +356,7 @@ details.check summary::-webkit-details-marker{display:none}
 @media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
 </style>
 
+</head><body>
 <div class="app" id="app"></div>
 <nav class="tabbar" id="tabbar" aria-label="Main"></nav>
 <div class="scrim" id="scrim"></div>
@@ -1009,3 +1012,4 @@ function afterRender(){
   if(LIVE) setInterval(()=>{if(document.visibilityState==="visible"&&!$("#sheet").classList.contains("on"))refresh()},30000);
 })();
 </script>
+</body></html>
