@@ -507,7 +507,9 @@ async function api(action,payload){
 let online=true;
 async function refresh(){
   if(LIVE){
-    try{const r=await fetch(API_URL+"?action=state&name="+encodeURIComponent(ME||""));S=await r.json();online=true}
+    try{let r=await fetch(API_URL+"?action=state&name="+encodeURIComponent(ME||""));let next=await r.json();
+      if(next.error==="Choose a name from Family"&&ME){ME="";store.set("me","");myProfile={};myPicks=[];myDone=new Set();myRoll="";r=await fetch(API_URL+"?action=state");next=await r.json()}
+      if(next.error)throw new Error(next.error);S=next;online=true}
     catch(e){online=false}
   } else S=localState();
   if(!S.family||!S.family.length)S.family=SEED_FAMILY.map(n=>({name:n}));
@@ -517,6 +519,7 @@ async function refresh(){
   if(!S.notes)S.notes={};
   if(!S.eat||!S.eat.length)S.eat=SEED_EAT.map(([name,note])=>({name,note,status:"Not called yet"}));
   render();
+  if(!ME&&!$("#onb"))onboarding();
 }
 
 /* ===== LIVE EXTRAS: weather + tide (work on the real site; quietly skipped where blocked) ===== */
@@ -913,7 +916,7 @@ function onboarding(){
   <form class="other" id="otherForm"><input id="otherIn" placeholder="Someone else? Type your name" aria-label="Your name" maxlength="24"><button class="btn" type="submit">Go</button></form>`;
   document.body.appendChild(o);
 }
-function setMe(n){ME=n.trim();store.set("me",ME);myProfile=store.get("profile-"+ME,store.get("profile",{}));$("#onb")&&$("#onb").remove();toast(`Hi ${ME}! 👋`);refresh().then(()=>{if(!profileDone())openQuiz()})}
+function setMe(n){ME=n.trim();store.set("me",ME);myProfile=store.get("profile-"+ME,store.get("profile",{}));$("#onb")&&$("#onb").remove();toast(`Hi ${ME}! 👋`);refresh().then(()=>{if(ME&&!profileDone())openQuiz()})}
 
 /* ===== EVENTS ===== */
 document.addEventListener("click",async e=>{
@@ -1001,7 +1004,7 @@ function afterRender(){
 (async function(){
   await refresh();
   const hashName=decodeURIComponent((location.hash||"").slice(1));const hit=hashName&&S.family.find(f=>f.name.toLowerCase()===hashName.toLowerCase());
-  if(hit&&hit.name!==ME)setMe(hit.name); else if(!ME) onboarding();
+  if(hit&&hit.name!==ME)setMe(hit.name); else if(!ME&&!$("#onb")) onboarding();
   loadWeather(); loadTide();
   if(LIVE) setInterval(()=>{if(document.visibilityState==="visible"&&!$("#sheet").classList.contains("on"))refresh()},30000);
 })();
