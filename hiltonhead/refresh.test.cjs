@@ -2,6 +2,9 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const vm = require('node:vm');
 const html = fs.readFileSync(__dirname + '/index.html', 'utf8');
+const viewport = /<meta\b[^>]*name=["']viewport["'][^>]*content=["'][^"']*width=device-width[^"']*initial-scale=1(?:[,.]|["'])/i;
+assert.match(html, viewport, 'Phone layout requires a device-width viewport in the HTML source');
+assert.doesNotMatch(html.replace(/<meta\b[^>]*name=["']viewport["'][^>]*>/i, ''), viewport, 'Regression must detect the missing-viewport version');
 const refresh = html.match(/async function refresh\(\)\{[\s\S]*?\n\}\n\n\/\* ===== LIVE EXTRAS/)[0].split('\n\n/*')[0];
 const state = {family:[{name:'Jimmy'}],picks:{top:[{id:'bikes',count:1}]}};
 async function run(responses) {
