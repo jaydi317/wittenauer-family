@@ -13,7 +13,8 @@ async function check(browser, url, screenshot) {
     const metrics = await page.evaluate(() => {
       const grid = document.querySelector('#onb .who').getBoundingClientRect();
       return { viewport: document.querySelector('meta[name="viewport"]')?.content,
-        innerWidth, pixelRatio: devicePixelRatio, touch: navigator.maxTouchPoints,
+        innerWidth, pixelRatio: devicePixelRatio,
+        touch: 'ontouchstart' in window || navigator.maxTouchPoints > 0,
         scrollWidth: document.documentElement.scrollWidth,
         grid: { x: grid.x, width: grid.width } };
     });
