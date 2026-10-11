@@ -369,7 +369,11 @@ body{font-size:18px}
 .glass{min-height:40px;padding:6px 12px}
 .sugg .chip{min-height:44px}
 .sticky-cta{position:sticky;bottom:0;z-index:2;box-shadow:0 -12px 18px var(--surface)}
-.toast{top:calc(env(safe-area-inset-top,0px) + 64px)}
+.toast{top:calc(env(safe-area-inset-top,0px) + 64px);opacity:0;visibility:hidden;pointer-events:none;transition:transform .3s cubic-bezier(.2,.9,.2,1),opacity .2s,visibility 0s .3s}
+.toast.on{opacity:1;visibility:visible;transition:transform .3s cubic-bezier(.2,.9,.2,1),opacity .2s}
+.onb{justify-content:flex-start}
+.onb>:first-child{margin-top:auto}
+.onb>:last-child{margin-bottom:auto}
 .opt{min-height:96px}
 @media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
 </style>
