@@ -1,0 +1,292 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="robots" content="noindex"><style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>Witts Take Hilton Head</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Atkinson+Hyperlegible:wght@400;700&display=swap">
+<style>
+:root{
+  --bg:#EEF3F0; --surface:#FFFFFF; --ink:#13302C; --muted:#4F6762; --line:#CFDDD7;
+  --accent:#16707F; --accent-ink:#FFFFFF; --sun:#F2B134; --sun-ink:#3A2600; --soft:#DDEBE6; --warn:#B4442A;
+  --display:"Bricolage Grotesque", "Avenir Next", system-ui, sans-serif;
+  --body:"Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", sans-serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){:root{
+  --bg:#0E1C1A; --surface:#162A27; --ink:#E6F0EC; --muted:#9FB7B0; --line:#2A4440;
+  --accent:#4FB3C2; --accent-ink:#06211F; --sun:#F2B134; --sun-ink:#2A1B00; --soft:#1D3633; --warn:#F08A6E; color-scheme:dark}}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:17px;line-height:1.5;padding:0 16px 48px}
+.wrap{max-width:620px;margin:0 auto}
+h1,h2,h3{font-family:var(--display);text-wrap:balance;margin:0;line-height:1.1}
+h2{font-size:1.55rem;font-weight:800}
+h3{font-size:1.1rem;font-weight:600}
+a{color:var(--accent)}
+p{margin:0}
+.muted{color:var(--muted)}
+.small{font-size:.9rem}
+header{padding-block:28px 12px}
+.eyebrow{font-size:.78rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:700}
+h1{font-size:clamp(2.2rem,9vw,3.2rem);font-weight:800;margin-top:6px;letter-spacing:-.02em}
+h1 span{color:var(--accent)}
+.daybar{display:flex;gap:4px;margin-top:16px}
+.daybar i{flex:1;height:8px;border-radius:4px;background:var(--line)}
+.daybar i.past{background:var(--accent);opacity:.45}
+.daybar i.now{background:var(--sun)}
+.daylabel{display:flex;justify-content:space-between;margin-top:6px;font-size:.85rem;color:var(--muted);font-variant-numeric:tabular-nums}
+nav{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);margin:0 -16px;padding:10px 16px;border-bottom:1px solid var(--line);overflow-x:auto;white-space:nowrap;scrollbar-width:none}
+nav::-webkit-scrollbar{display:none}
+nav a{display:inline-block;padding:7px 12px;margin-right:6px;border-radius:999px;background:var(--surface);border:1px solid var(--line);color:var(--ink);text-decoration:none;font-size:.9rem;font-weight:700}
+section{padding-block:26px 6px;scroll-margin-top:64px}
+.sechead{display:flex;flex-direction:column;gap:4px;margin-bottom:14px}
+.today{background:var(--sun);color:var(--sun-ink);border-radius:18px;padding:18px}
+.today .eyebrow{color:var(--sun-ink);opacity:.8}
+.today h2{font-size:1.8rem;margin-top:4px}
+.today ul{margin:12px 0 0;padding-left:20px;display:grid;gap:6px}
+.btnrow{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.btn{appearance:none;border:0;font:inherit;font-weight:700;font-size:.95rem;padding:11px 16px;border-radius:12px;background:var(--accent);color:var(--accent-ink);text-decoration:none;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+.btn.ghost{background:transparent;color:inherit;border:2px solid currentColor}
+.btn:focus-visible,nav a:focus-visible,.chip:focus-visible,.heart:focus-visible{outline:3px solid var(--sun);outline-offset:2px}
+.heads{margin-top:12px;display:grid;gap:8px}
+.head{background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--warn);border-radius:10px;padding:10px 12px;font-size:.92rem}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:18px;display:grid;gap:18px}
+label,.q{font-weight:700;display:block;margin-bottom:8px}
+input[type=text],textarea{width:100%;font:inherit;padding:12px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink)}
+textarea{min-height:84px;resize:vertical}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{appearance:none;font:inherit;font-size:.92rem;padding:8px 12px;border-radius:999px;border:1px solid var(--line);background:var(--bg);color:var(--ink);cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.preview{background:var(--soft);border-radius:12px;padding:12px;font-size:.9rem;white-space:pre-wrap;word-break:break-word}
+.phone{font-variant-numeric:tabular-nums;user-select:all;font-weight:700}
+.toast{font-size:.88rem;color:var(--accent);font-weight:700;min-height:1.2em}
+.days{display:grid;gap:10px}
+.day{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 16px}
+.day.now{border:2px solid var(--sun)}
+.day .when{font-size:.8rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:700}
+.day ul{margin:8px 0 0;padding-left:20px;display:grid;gap:4px;font-size:.95rem}
+.day .note{margin-top:8px;font-size:.85rem;color:var(--warn);font-weight:700}
+.filters{display:flex;gap:8px;overflow-x:auto;padding-bottom:6px;margin:0 -16px 12px;padding-left:16px;padding-right:16px;scrollbar-width:none}
+.filters .chip{flex:none}
+.cards{display:grid;gap:10px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 16px;display:grid;gap:8px}
+.card .top{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+.card .top>div{min-width:0}
+.meta{display:flex;flex-wrap:wrap;gap:6px;font-size:.8rem}
+.tag{padding:3px 8px;border-radius:6px;background:var(--soft);color:var(--ink);font-weight:700}
+.tag.book{background:var(--sun);color:var(--sun-ink)}
+.tip{font-size:.88rem;color:var(--muted)}
+.links{display:flex;gap:14px;font-size:.9rem;font-weight:700;flex-wrap:wrap}
+.heart{appearance:none;border:1px solid var(--line);background:var(--bg);color:var(--ink);font:inherit;font-weight:700;font-size:.85rem;border-radius:999px;padding:6px 10px;cursor:pointer;flex:none}
+.heart[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.score{display:flex;align-items:baseline;gap:8px;margin-bottom:10px}
+.score b{font-family:var(--display);font-size:2.4rem;font-variant-numeric:tabular-nums}
+.check{display:flex;gap:12px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 12px;cursor:pointer}
+.check input{width:22px;height:22px;accent-color:var(--accent);flex:none}
+.check span{flex:1}
+.check em{font-style:normal;font-weight:700;color:var(--accent);font-variant-numeric:tabular-nums}
+.checks{display:grid;gap:8px}
+.eat{display:grid;gap:8px}
+.eatrow{display:flex;justify-content:space-between;gap:10px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.eatrow>div{min-width:0}
+.status{font-size:.78rem;font-weight:700;padding:4px 8px;border-radius:6px;background:var(--soft);white-space:nowrap}
+footer{margin-top:36px;font-size:.85rem;color:var(--muted);text-align:center}
+@media (prefers-reduced-motion: reduce){*{scroll-behavior:auto!important}}
+html{scroll-behavior:smooth}
+</style>
+</head><body>
+<div class="wrap">
+<header>
+  <div class="eyebrow">Hilton Head Island · Oct 11–17, 2026</div>
+  <h1>The Witts take <span>Hilton Head</span></h1>
+  <div class="daybar" id="daybar"></div>
+  <div class="daylabel"><span id="daycount">Day 1 of 7</span><span>11 of us · home Saturday</span></div>
+</header>
+<nav aria-label="Sections">
+  <a href="#today">Today</a><a href="#say">Have your say</a><a href="#plan">The week</a><a href="#do">Things to do</a><a href="#challenge">Challenge</a><a href="#eat">Eat</a><a href="#photos">Photos</a><a href="#genie">Ask the genie</a>
+</nav>
+<section id="today">
+  <div class="today">
+    <div class="eyebrow" id="todaydate">Today</div>
+    <h2 id="todaytitle">Land &amp; unwind</h2>
+    <ul id="todaylist"></ul>
+    <div class="btnrow">
+      <a class="btn ghost" href="https://www.hiltonheadisland.com/beaches/tides/" target="_blank" rel="noopener">🌊 Today's tides</a>
+      <a class="btn ghost" href="https://forecast.weather.gov/MapClick.php?lat=32.2163&lon=-80.7526" target="_blank" rel="noopener">☀️ Weather</a>
+    </div>
+  </div>
+  <div class="heads">
+    <div class="head"><b>Low tide = big beach.</b> Bike rides and shark-tooth hunts work best within about 2 hours of low tide. Check the tide link above.</div>
+    <div class="head"><b>Pinckney Island is closed Friday</b> for a deer hunt (gate shuts Thursday at sunset). Go Sunday–Thursday.</div>
+    <div class="head"><b>Thursday night is the last Music &amp; Taste of the season</b> at Shelter Cove Harbour. Free, bring chairs.</div>
+  </div>
+</section>
+<section id="say">
+  <div class="sechead">
+    <h2>Have your say</h2>
+    <p class="muted">60 seconds. Everyone fills this out, kids too. Your answers go to Jimmy, and the AI builds the plan around what the family actually wants.</p>
+  </div>
+  <form class="panel" id="sayform" autocomplete="off">
+    <div><label for="f-name">Your name</label><input type="text" id="f-name" placeholder="e.g. Claire"></div>
+    <div><span class="q">I am…</span><div class="chips" id="f-who"></div></div>
+    <div>
+      <span class="q">Pick up to 5 things you'd love to do</span>
+      <div class="chips" id="f-picks"></div>
+      <p class="small muted" style="margin-top:8px">Want something more specific? Tap <b>♡ Want this</b> on anything in <a href="#do">Things to do</a> and it shows up here too.</p>
+    </div>
+    <div><span class="q">My vacation energy</span><div class="chips" id="f-energy"></div></div>
+    <div><span class="q">Spending on paid stuff</span><div class="chips" id="f-spend"></div></div>
+    <div><label for="f-skip">Anything to skip? (foods, activities, fears)</label><input type="text" id="f-skip" placeholder="e.g. no seafood, scared of heights"></div>
+    <div><label for="f-one">The one thing that would make this trip perfect for you</label><textarea id="f-one" placeholder="Dream big. Seriously."></textarea></div>
+    <div>
+      <span class="q">Your answers</span>
+      <div class="preview" id="preview"></div>
+      <div class="btnrow">
+        <a class="btn" id="sendSay" href="#">💬 Text it to Jimmy</a>
+        <button type="button" class="btn ghost" id="copySay" style="color:var(--accent)">Copy</button>
+      </div>
+      <p class="small muted" style="margin-top:10px">If the text button doesn't open Messages, tap Copy and text it to Jimmy at <span class="phone">626-354-3229</span>.</p>
+      <p class="toast" id="toastSay" aria-live="polite"></p>
+    </div>
+  </form>
+</section>
+<section id="plan">
+  <div class="sechead"><h2>The week</h2><p class="muted">A starter plan so we're never stuck. Your answers above will reshape it.</p></div>
+  <div class="days" id="days"></div>
+</section>
+<section id="do">
+  <div class="sechead"><h2>Things to do</h2><p class="muted"><span id="count">27</span> ideas, checked this week. Most places don't post October hours, so call ahead or ask the genie.</p></div>
+  <div class="filters" id="filters"></div>
+  <div class="cards" id="cards"></div>
+</section>
+<section id="challenge">
+  <div class="sechead"><h2>Witt Island Challenge</h2><p class="muted">Check things off all week. Highest score by Friday dinner picks Saturday's donuts for everyone.</p></div>
+  <div class="score"><b id="pts">0</b><span class="muted">points on your phone</span></div>
+  <div class="checks" id="checks"></div>
+  <div class="btnrow">
+    <a class="btn" id="sendScore" href="#">💬 Text my score</a>
+    <button type="button" class="btn ghost" id="copyScore" style="color:var(--accent)">Copy</button>
+  </div>
+  <p class="toast" id="toastScore" aria-live="polite"></p>
+</section>
+<section id="eat">
+  <div class="sechead"><h2>Eat</h2><p class="muted">Feeding 11 takes planning. These are known for big groups. The genie calls ahead to check for a table, and the status updates here.</p></div>
+  <div class="eat" id="eatlist"></div>
+</section>
+<section id="photos">
+  <div class="sechead"><h2>Photos</h2><p class="muted">One shared album for the whole trip, full quality, so nobody has to text 200 pictures to 10 people.</p></div>
+  <div class="panel" id="photopanel"></div>
+</section>
+<section id="genie">
+  <div class="sechead"><h2>Ask the genie</h2><p class="muted">Jimmy's AI can research anything and even call places for us. Ask it something.</p></div>
+  <form class="panel" id="genieform" autocomplete="off">
+    <div>
+      <label for="g-ask">What should the genie find out?</label>
+      <textarea id="g-ask" placeholder="Can Hudson's seat 11 at 6pm Thursday?"></textarea>
+      <div class="chips" style="margin-top:10px" id="g-ideas"></div>
+    </div>
+    <div class="btnrow">
+      <a class="btn" id="sendGenie" href="#">🧞 Send to the genie</a>
+      <button type="button" class="btn ghost" id="copyGenie" style="color:var(--accent)">Copy</button>
+    </div>
+    <p class="small muted">Goes to Jimmy at <span class="phone">626-354-3229</span>, who hands it to the genie.</p>
+    <p class="toast" id="toastGenie" aria-live="polite"></p>
+  </form>
+</section>
+<footer>Made for the Wittenauers with love · questions? text Jimmy</footer>
+</div>
+<script>
+const JIMMY="+16263543229";
+const ALBUM_URL=""; // paste the shared album link here
+const START=new Date(2026,9,11);
+const CAT={water:"On the water",adventure:"Adventure",beach:"Beach",explore:"Explore",chill:"Chill & treats",daytrip:"Day trips",night:"Evenings"};
+const A=[
+{id:"dolphin",name:"Dolphin & nature boat tour",cat:"water",best:"everyone",cost:"$$",time:"90 min",book:true,blurb:"A guide steers you around Broad Creek and the sound, pointing out dolphins, birds and marsh life.",tip:"About $34 adults, $19 kids by day; sunset trips run daily.",url:"https://www.hiltonheadtours.com/",phone:"(843) 681-2522"},
+{id:"sunsetcruise",name:"Sunset dolphin cruise from Harbour Town",cat:"night",best:"everyone",cost:"$$",time:"1.5–2 hrs",book:true,blurb:"Board by the lighthouse and look for fins while the sky goes orange.",tip:"Runs year-round, from about $50. There's also a morning 'Donuts & Dolphins' trip.",url:"https://www.vagabondcruise.com/dolphin-cruises/",phone:"(843) 363-9026"},
+{id:"kayak",name:"Guided kayak or paddleboard tour",cat:"water",best:"teens",cost:"$$",time:"2 hrs",book:true,blurb:"Paddle quiet marsh creeks and spot herons, crabs, and maybe a dolphin.",tip:"Kayak Hilton Head, Outside Hilton Head and Island Head all run tours.",url:"https://www.kayakhiltonhead.com/",phone:"(843) 684-1910"},
+{id:"bikes",name:"Bike the beach at low tide",cat:"beach",best:"everyone",cost:"$$",time:"2–3 hrs",book:false,blurb:"Rent bikes for everyone and ride the hard, wet sand right along the water.",tip:"Ride within 2 hours of low tide. Many shops deliver bikes to your house.",url:"https://www.hiltonheadisland.com/bike-the-beach-on-hilton-head-island/",phone:""},
+{id:"lighthouse",name:"Harbour Town Lighthouse climb",cat:"explore",best:"everyone",cost:"$",time:"1–2 hrs",book:false,blurb:"114 steps up to a big view of the harbor, then shops and boats below.",tip:"Open daily 10am to sundown, about $8. Go an hour before sunset. Sea Pines gate fee may apply.",url:"https://harbourtownlighthouse.com/",phone:"(866) 305-9814"},
+{id:"forest",name:"Sea Pines Forest Preserve",cat:"explore",best:"everyone",cost:"$",time:"1.5 hrs",book:false,blurb:"Wooded trails, boardwalks over ponds, an ancient shell ring, and gators to spot.",tip:"Pair with the stables and the lighthouse for one Sea Pines day.",url:"https://seapines.com/experiences",phone:""},
+{id:"museum",name:"Coastal Discovery Museum",cat:"explore",best:"everyone",cost:"Free",time:"1.5–2 hrs",book:false,blurb:"Free museum and trails under giant live oaks at Honey Horn.",tip:"Farmers market Tuesday 9am–1pm. Fridays: crabs & craft beer for the adults.",url:"https://www.coastaldiscovery.org",phone:"(843) 689-6767"},
+{id:"pinckney",name:"Pinckney Island Wildlife Refuge",cat:"explore",best:"everyone",cost:"Free",time:"2–3 hrs",book:false,blurb:"Flat trails to ponds packed with egrets and ibis, plus the odd alligator.",tip:"CLOSED Friday Oct 16. No restrooms or water, so bring your own.",url:"https://fws.gov/refuge/pinckney-island/visit-us",phone:"(843) 784-2468"},
+{id:"daufuskie",name:"Daufuskie Island day trip",cat:"daytrip",best:"everyone",cost:"$$$",time:"Half or full day",book:true,blurb:"Ferry to a car-free island, rent a golf cart, and putter past old cottages and a crab shack.",tip:"About $45 ages 13+, $30 ages 3–12. Golf-cart-plus-lunch packages exist.",url:"http://www.daufuskiedifference.com",phone:"(843) 342-8687"},
+{id:"savannah",name:"Savannah day trip",cat:"daytrip",best:"everyone",cost:"$$",time:"Full day",book:false,blurb:"River Street, shady squares and Forsyth Park, about an hour away.",tip:"Or skip the drive: a boat from Harbour Town gives you about 4 hours in town.",url:"https://www.visitsavannah.com",phone:""},
+{id:"minigolf",name:"Pirate's Island mini golf",cat:"chill",best:"everyone",cost:"$",time:"1.5 hrs",book:false,blurb:"Two pirate courses with waterfalls. Perfect for a family score war.",tip:"Near Shelter Cove. Backup: Legendary Golf.",url:"https://www.piratescove.net/locations/south-carolina/hilton-head-island/",phone:"(843) 686-4001"},
+{id:"escape",name:"Escape room",cat:"adventure",best:"teens",cost:"$$",time:"1 hr",book:true,blurb:"Race the clock as a team to crack the codes and get out.",tip:"Options: Escape Room Hilton Head, Escape Island, Lockstar. Book before you go.",url:"https://www.locallifesc.com/lowcountry-escape-rooms-guide/",phone:""},
+{id:"karts",name:"Go-karts at Broad Creek",cat:"adventure",best:"teens",cost:"$$",time:"1 hr",book:false,blurb:"Electric karts, so the cousins can finally settle who drives best.",tip:"Solo drivers about 8+. Same spot as the zipline.",url:"https://www.ziplinehiltonhead.com",phone:"(843) 682-6000"},
+{id:"zipline",name:"Zipline + aerial ropes course",cat:"adventure",best:"teens",cost:"$$$",time:"1.5–2 hrs",book:true,blurb:"Seven ziplines through the treetops, or a ropes course with about 50 obstacles.",tip:"Sells out, so book ahead.",url:"https://www.ziplinehiltonhead.com",phone:"(843) 682-6000"},
+{id:"crabbing",name:"Crabbing boat trip",cat:"water",best:"everyone",cost:"$$",time:"90 min",book:true,blurb:"Everyone gets a line and tries to pull up blue crabs. All gear provided.",tip:"About $35 adults, $25 kids 11 and under.",url:"https://www.hiltonheadcrabbing.com/",phone:"(843) 229-8399"},
+{id:"fishing",name:"Fishing charter",cat:"water",best:"teens",cost:"$$$",time:"4–6 hrs",book:true,blurb:"Head out with a captain and go after something big. Gear supplied.",tip:"Captain Hook runs a big party boat; Bay Runner does private trips.",url:"https://www.captainhookhiltonhead.com/",phone:"(843) 905-2710"},
+{id:"sharkteeth",name:"Shark-tooth hunt at Fish Haul Beach",cat:"beach",best:"everyone",cost:"Free",time:"1–2 hrs",book:false,blurb:"Comb the tide line for black fossil shark teeth and shells.",tip:"Go at low tide. Bring a mesh scoop and a bag.",url:"https://spinnakerresorts.com/the-ultimate-guide-to-hilton-head-islands-public-beaches/",phone:""},
+{id:"horses",name:"Lawton Stables trail ride",cat:"adventure",best:"teens",cost:"$$",time:"1 hr",book:true,blurb:"A guided ride on horseback through the Sea Pines forest.",tip:"Riders must be 8+.",url:"https://seapines.com/experiences/amenities/lawton-stables",phone:"(843) 671-2586"},
+{id:"parasail",name:"Parasailing",cat:"adventure",best:"teens",cost:"$$$",time:"1.5 hrs",book:true,blurb:"Float high over the sound while the non-flyers cheer from the boat.",tip:"About $75–80 per flyer; riders on the boat pay less.",url:"https://skypirateparasail.com/parasail/",phone:"(843) 842-2566"},
+{id:"coligny",name:"Coligny Beach & Plaza",cat:"beach",best:"everyone",cost:"Free",time:"2–4 hrs",book:false,blurb:"The island's liveliest beach, with shops and snacks across the street.",tip:"Showers, swings and a splash pad at the beach.",url:"https://www.hiltonheadisland.com/beaches/",phone:""},
+{id:"sheltercove",name:"Shelter Cove Harbour",cat:"explore",best:"everyone",cost:"Free",time:"1–2 hrs",book:false,blurb:"Waterside restaurants, shops and boats. An easy evening stroll.",tip:"Mini golf and boat tours are right nearby.",url:"https://www.sheltercovehiltonhead.com",phone:"(866) 661-3822"},
+{id:"musictaste",name:"Fall Music & Taste on the Harbour",cat:"night",best:"everyone",cost:"Free",time:"2 hrs",book:false,blurb:"Free live music by the water, with food and drinks from harbor restaurants.",tip:"Thursday Oct 15 is the final night. Bring chairs and a canned-food donation.",url:"https://www.hiltonheadisland.org/events/fall-music-taste-shelter-cove-harbour-marina",phone:""},
+{id:"bluffton",name:"Bluffton Arts & Seafood Festival",cat:"daytrip",best:"everyone",cost:"$",time:"2–3 hrs",book:false,blurb:"Local seafood, live music and artists in Old Town Bluffton.",tip:"Runs through Oct 18. The big street fest is the weekend we leave, so go midweek.",url:"https://www.visitbluffton.org/events/historic-bluffton-arts-seafood-festival-2026",phone:""},
+{id:"icecream",name:"The Ice Cream Cone",cat:"chill",best:"everyone",cost:"$",time:"30 min",book:false,blurb:"Dozens of hand-scooped flavors plus Dole Whip, steps from Coligny Beach.",tip:"Fall hours listed until 8:30pm.",url:"https://www.colignyicecreamcone.com",phone:"(843) 816-6734"},
+{id:"kilwins",name:"Kilwin's",cat:"chill",best:"everyone",cost:"$",time:"30 min",book:false,blurb:"Ice cream, fudge and caramel apples in one stop.",tip:"At Shelter Cove. Pair with the harbor walk.",url:"https://www.kilwins.com/stores/kilwins-hilton-head-shelter-cove",phone:"(843) 785-2727"},
+{id:"donuts",name:"Duck Donuts",cat:"chill",best:"everyone",cost:"$",time:"30 min",book:false,blurb:"Warm made-to-order donuts. You pick the icing and toppings.",tip:"890 William Hilton Pkwy.",url:"https://www.duckdonuts.com",phone:""},
+{id:"harbourtreats",name:"Harbour Town candy & bakery",cat:"chill",best:"everyone",cost:"$",time:"30 min",book:false,blurb:"Candy, pastries and donuts right next to the lighthouse.",tip:"Cinnamon Bear Country Store and Harbour Town Bakery.",url:"https://cinnamonbearstores.com",phone:"(843) 671-2219"}
+];
+const FEATURED=["dolphin","bikes","zipline","kayak","lighthouse","crabbing","parasail","horses","minigolf","sharkteeth","daufuskie","savannah","escape","karts"];
+const PLAN=[
+ {t:"Land & unwind",i:["Beach time at Coligny (splash pad for anyone who wants it)","Ice cream at The Ice Cream Cone","Tonight: everyone fills out <b>Have your say</b>"]},
+ {t:"Wheels & dolphins",i:["Bike the beach at low tide","Pool or beach afternoon","Sunset dolphin cruise"]},
+ {t:"Island nature",i:["Coastal Discovery Museum + farmers market (9am–1pm)","Pinckney Island walk, or a guided kayak tour for the teens","Mini golf after dinner"]},
+ {t:"Sea Pines day",i:["Lawton Stables trail ride","Sea Pines Forest Preserve","Lighthouse climb an hour before sunset, then Harbour Town treats"]},
+ {t:"Adventure day",i:["Zipline, ropes course or go-karts at Broad Creek","Crabbing boat for the calmer crew","Evening: Music & Taste at Shelter Cove (last night of the season), then Kilwin's"]},
+ {t:"Choose your own",i:["Day trip: Daufuskie Island or Savannah","Or: shark-tooth hunt at Fish Haul Beach at low tide","Last-night family dinner (the genie books a table for 11)"],note:"Pinckney Island is closed today."},
+ {t:"Pack & go",i:["Duck Donuts send-off (challenge winner picks)","One last family photo on the beach"]}
+];
+const CHALLENGE=[["Spot a dolphin",10],["Find a shark tooth",20],["Spot an alligator (from far away!)",15],["Climb all 114 lighthouse steps",10],["Ride a bike on the beach",10],["Catch a crab",15],["Get a photo of all 11 of us",25],["Find a sand dollar (live ones stay in the water)",15],["Try a food you've never had",10],["Watch a sunset with the family",5],["Spot a heron or egret",5],["Make the oldest person in the house laugh",5]];
+const EAT=[["Hudson's Seafood House on the Docks","Big waterfront seafood spot"],["Salty Dog Cafe","Outdoor family classic in South Beach"],["Skull Creek Boathouse","Big menu, sunset over the water"],["Fish Camp on Broad Creek","Casual, lots of outdoor seating"],["The Crazy Crab","Seafood with a kid-friendly menu"]];
+const store={get(k,d){try{const v=localStorage.getItem("witt-"+k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem("witt-"+k,JSON.stringify(v))}catch(e){}}};
+let picks=new Set(store.get("picks",[]));
+let done=new Set(store.get("done",[]));
+const ans=store.get("ans",{who:"",energy:"",spend:""});
+const $=s=>document.querySelector(s);
+const smsLink=body=>"sms:"+JIMMY+"?&body="+encodeURIComponent(body);
+function copy(text,toast){const t=$(toast);if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(text).then(()=>{t.textContent="Copied. Paste it into a text to Jimmy."},()=>{t.textContent="Couldn't copy here. Press and hold the text above to copy it."})}else t.textContent="Press and hold the text above to copy it."}
+const now=new Date();const today=new Date(now.getFullYear(),now.getMonth(),now.getDate());
+let di=Math.round((today-START)/86400000);const live=di>=0&&di<=6;di=Math.max(0,Math.min(6,di));
+const fmt=d=>d.toLocaleDateString("en-US",{weekday:"long",month:"short",day:"numeric"});
+const dateOf=n=>new Date(2026,9,11+n);
+$("#daybar").innerHTML=PLAN.map((_,n)=>`<i class="${n<di?'past':n===di?'now':''}"></i>`).join("");
+$("#daycount").textContent=live?`Day ${di+1} of 7`:(today<START?"Starts Oct 11":"Trip's over. What a week.");
+$("#todaydate").textContent=(live?"Today · ":"")+fmt(dateOf(di));
+$("#todaytitle").innerHTML=PLAN[di].t;
+$("#todaylist").innerHTML=PLAN[di].i.map(x=>`<li>${x}</li>`).join("")+(PLAN[di].note?`<li><b>${PLAN[di].note}</b></li>`:"");
+$("#days").innerHTML=PLAN.map((p,n)=>`<div class="day ${n===di&&live?'now':''}"><div class="when">${fmt(dateOf(n))}${n===di&&live?' · today':''}</div><h3>${p.t}</h3><ul>${p.i.map(x=>`<li>${x}</li>`).join("")}</ul>${p.note?`<div class="note">${p.note}</div>`:""}</div>`).join("");
+const SINGLE={who:["Adult","Teen (14–17)","Kid (11–13)"],energy:["Chill","A mix","Go-go-go"],spend:["Keep it cheap","Some splurges","Go big"]};
+for(const [k,opts] of Object.entries(SINGLE)){const el=$("#f-"+k);el.innerHTML=opts.map(o=>`<button type="button" class="chip" aria-pressed="${ans[k]===o}" data-v="${o}">${o}</button>`).join("");el.addEventListener("click",e=>{const b=e.target.closest(".chip");if(!b)return;ans[k]=ans[k]===b.dataset.v?"":b.dataset.v;store.set("ans",ans);el.querySelectorAll(".chip").forEach(c=>c.setAttribute("aria-pressed",c.dataset.v===ans[k]));update()})}
+function renderPickChips(){const extra=[...picks].filter(id=>!FEATURED.includes(id));const ids=[...FEATURED,...extra];$("#f-picks").innerHTML=ids.map(id=>{const a=A.find(x=>x.id===id);return `<button type="button" class="chip" aria-pressed="${picks.has(id)}" data-id="${id}">${a.name}</button>`}).join("")}
+function togglePick(id){if(picks.has(id))picks.delete(id);else{if(picks.size>=5){$("#toastSay").textContent="That's 5. Remove one to add another.";return false}picks.add(id)}store.set("picks",[...picks]);renderPickChips();renderCards();update();return true}
+$("#f-picks").addEventListener("click",e=>{const b=e.target.closest(".chip");if(b)togglePick(b.dataset.id)});
+["name","skip","one"].forEach(k=>{const el=$("#f-"+k);el.value=store.get("t-"+k,"");el.addEventListener("input",()=>{store.set("t-"+k,el.value);update()})});
+function answerText(){const nm=$("#f-name").value.trim()||"(name)";const p=[...picks].map(id=>A.find(x=>x.id===id).name);return `🏝️ Witt HHI answers\nName: ${nm}${ans.who?" ("+ans.who+")":""}\nTop picks: ${p.length?p.join(", "):"—"}\nEnergy: ${ans.energy||"—"}\nSpending: ${ans.spend||"—"}\nSkip: ${$("#f-skip").value.trim()||"—"}\nPerfect trip: ${$("#f-one").value.trim()||"—"}`}
+function update(){const t=answerText();$("#preview").textContent=t;$("#sendSay").href=smsLink(t)}
+$("#copySay").addEventListener("click",()=>copy(answerText(),"#toastSay"));
+$("#sayform").addEventListener("submit",e=>e.preventDefault());
+let filter="all";
+const FILTERS=[["all","All"],["teens","Teens love"],["water","On the water"],["adventure","Adventure"],["beach","Beach"],["explore","Explore"],["night","Evenings"],["daytrip","Day trips"],["chill","Treats & chill"],["free","Free"]];
+$("#filters").innerHTML=FILTERS.map(([k,l])=>`<button type="button" class="chip" aria-pressed="${k==='all'}" data-f="${k}">${l}</button>`).join("");
+$("#filters").addEventListener("click",e=>{const b=e.target.closest(".chip");if(!b)return;filter=b.dataset.f;$("#filters").querySelectorAll(".chip").forEach(c=>c.setAttribute("aria-pressed",c.dataset.f===filter));renderCards()});
+function renderCards(){const list=A.filter(a=>filter==="all"||(filter==="teens"?a.best==="teens":filter==="free"?a.cost==="Free":a.cat===filter));$("#count").textContent=A.length;$("#cards").innerHTML=list.map(a=>`<article class="card"><div class="top"><div><h3>${a.name}</h3><div class="meta" style="margin-top:6px"><span class="tag">${CAT[a.cat]}</span><span class="tag">${a.cost}</span><span class="tag">${a.time}</span>${a.book?'<span class="tag book">Book ahead</span>':''}</div></div><button type="button" class="heart" aria-pressed="${picks.has(a.id)}" data-id="${a.id}">${picks.has(a.id)?"♥ Want":"♡ Want this"}</button></div><p>${a.blurb}</p><p class="tip">💡 ${a.tip}</p><div class="links"><a href="${a.url}" target="_blank" rel="noopener">Website</a>${a.phone?`<a href="tel:${a.phone.replace(/[^0-9]/g,'')}">${a.phone}</a>`:""}</div></article>`).join("")}
+$("#cards").addEventListener("click",e=>{const b=e.target.closest(".heart");if(!b)return;if(!togglePick(b.dataset.id)){b.textContent="Max 5 picks"}});
+function renderChallenge(){let pts=0;$("#checks").innerHTML=CHALLENGE.map(([t,p],n)=>{if(done.has(n))pts+=p;return `<label class="check" for="c${n}"><input type="checkbox" id="c${n}" data-n="${n}" ${done.has(n)?"checked":""}><span>${t}</span><em>+${p}</em></label>`}).join("");$("#pts").textContent=pts;const nm=$("#f-name").value.trim()||"(name)";const body=`🏆 Witt Island Challenge\n${nm}: ${pts} points\nDone: ${[...done].map(n=>CHALLENGE[n][0]).join(", ")||"nothing yet"}`;$("#sendScore").href=smsLink(body);$("#sendScore").dataset.body=body}
+$("#checks").addEventListener("change",e=>{const n=+e.target.dataset.n;e.target.checked?done.add(n):done.delete(n);store.set("done",[...done]);renderChallenge()});
+$("#copyScore").addEventListener("click",()=>copy($("#sendScore").dataset.body,"#toastScore"));
+$("#eatlist").innerHTML=EAT.map(([n,d])=>`<div class="eatrow"><div><h3>${n}</h3><p class="small muted">${d} · <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(n+' Hilton Head Island')}" target="_blank" rel="noopener">Map</a></p></div><span class="status">Not called yet</span></div>`).join("");
+$("#photopanel").innerHTML=ALBUM_URL?`<a class="btn" href="${ALBUM_URL}" target="_blank" rel="noopener">📸 Open the family album</a><p class="small muted">Add your photos from your camera roll: Share → the album.</p>`:`<p><b>Album link coming tonight.</b> Jimmy is setting up one shared album for all 11 of us.</p><p class="small muted">Until then, keep taking photos. You'll add them in one tap once the link is here.</p>`;
+const IDEAS=["Can a restaurant seat 11 at 6pm?","Is the zipline open this week?","Best spot to watch the sunset?","Rainy-day backup plan?"];
+$("#g-ideas").innerHTML=IDEAS.map(i=>`<button type="button" class="chip" data-i="${i}">${i}</button>`).join("");
+$("#g-ideas").addEventListener("click",e=>{const b=e.target.closest(".chip");if(!b)return;$("#g-ask").value=b.dataset.i;genieUpd()});
+function genieText(){return `🧞 Genie request (Witt HHI): ${$("#g-ask").value.trim()||"…"}`}
+function genieUpd(){$("#sendGenie").href=smsLink(genieText())}
+$("#g-ask").addEventListener("input",genieUpd);
+$("#copyGenie").addEventListener("click",()=>copy(genieText(),"#toastGenie"));
+$("#genieform").addEventListener("submit",e=>e.preventDefault());
+$("#f-name").addEventListener("input",renderChallenge);
+renderPickChips();renderCards();renderChallenge();update();genieUpd();
+</script>
+</body></html>
