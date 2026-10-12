@@ -211,7 +211,7 @@
         '<p class="lead">They go straight into <b>' + u.album + '</b> at full quality, so everyone can see them. Videos work too.</p>' +
         '<ol><li><b class="n">1</b><span>Tap <b>Open the album</b> below.</span></li>' +
         (u.pass ? '<li><b class="n">2</b><span>If it asks for a password, type<br><span class="pw">' + u.pass + '</span></span></li>' : '') +
-        '<li><b class="n">' + (u.pass ? 3 : 2) + '</b><span>Tap the <b>upload arrow</b> at the top, then pick your photos and videos.</span></li>' +
+        '<li><b class="n">' + (u.pass ? 3 : 2) + '</b><span>At the top, tap <b>Add photos</b> (the upload arrow), then pick your photos and videos.</span></li>' +
         '<li><b class="n">' + (u.pass ? 4 : 3) + '</b><span>Keep that page open until they finish. That\'s it.</span></li></ol>' +
         '<a class="btn btn-gold go" href="' + u.url + '" target="_blank" rel="noopener">Open the album</a></div>';
       function close() { document.removeEventListener("keydown", key, true); w.remove(); if (prev) prev.focus(); }

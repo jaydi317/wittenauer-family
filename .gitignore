@@ -1,0 +1,5 @@
+screenshots/
+backend/node_modules/
+backend/*.xlsx
+backend/*preview.png
+backend/*.ndjson
