@@ -79,10 +79,17 @@
     var err = gate.querySelector(".err");
     var btn = form.querySelector("button[type=submit]");
     function open() { gate.classList.add("gone"); document.body.classList.add("unlocked"); setTimeout(function () { gate.hidden = true; }, 950); onOpen(); }
-    Vault.remembered().then(function (ok) {
+    /* Magic link: wittenauer.family/#w=familyword unlocks with one tap and remembers this phone. */
+    var mw = location.hash.match(/[#&]w=([^&]+)/);
+    if (mw) {
+      var w = decodeURIComponent(mw[1]);
+      history.replaceState(null, "", location.pathname + location.search + location.hash.replace(/[#&]?w=[^&]+/, "").replace(/^#?&/, "#").replace(/^#$/, ""));
+      Vault.unlock(w, true).then(function (ok) { if (ok) open(); else startGate(); }).catch(startGate);
+    } else startGate();
+    function startGate() { Vault.remembered().then(function (ok) {
       if (ok) { gate.hidden = true; gate.classList.add("gone"); document.body.classList.add("unlocked", "instant"); onOpen(); }
       else { gate.classList.add("show-form"); setTimeout(function () { try { input.focus({ preventScroll: true }); } catch (e) {} }, 900); }
-    });
+    }); }
     form.addEventListener("submit", async function (e) {
       e.preventDefault();
       err.textContent = ""; btn.disabled = true; btn.textContent = "Opening…";
