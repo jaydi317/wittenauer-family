@@ -87,3 +87,18 @@ img{display:block;max-width:100%}
 .shim{background:linear-gradient(100deg,#1C1B20 30%,#26252B 50%,#1C1B20 70%) #1C1B20;background-size:300% 100%;animation:shim 1.6s ease-in-out infinite}
 @keyframes shim{from{background-position:100% 0}to{background-position:0 0}}
 @media (prefers-reduced-motion:reduce){.shim{animation:none}}
+
+/* ---------- Add photos & videos sheet ---------- */
+.up-wrap{position:fixed;inset:0;z-index:950;background:rgba(0,0,0,.6);display:flex;align-items:flex-end;justify-content:center}
+.up{position:relative;width:100%;max-width:520px;background:#17161A;border-radius:22px 22px 0 0;padding:22px 22px max(26px,env(safe-area-inset-bottom));box-shadow:0 -10px 40px rgba(0,0,0,.5);animation:upin .3s cubic-bezier(.2,.8,.2,1)}
+@keyframes upin{from{transform:translateY(40px);opacity:0}}
+.up h2{margin:0 52px 6px 0;font-size:28px}
+.up .lead{margin:0 0 16px;color:var(--ink2);font-size:16px}
+.up ol{list-style:none;margin:0 0 18px;padding:0;display:grid;gap:12px;font-size:16px}
+.up li{display:flex;gap:12px;align-items:flex-start}
+.up li b.n{flex:0 0 28px;height:28px;border-radius:14px;background:#2A2930;display:grid;place-items:center;font-size:14px}
+.up .pw{display:inline-block;margin-top:4px;background:#26231C;border:1px solid var(--gold);color:var(--gold);font-weight:800;padding:4px 10px;border-radius:8px;letter-spacing:.04em}
+.up .go{width:100%;min-height:58px;font-size:18px}
+.up .x{position:absolute;right:14px;top:14px}
+@media (min-width:821px){.up-wrap{align-items:center}.up{border-radius:22px}}
+.btn-add svg{width:20px;height:20px}

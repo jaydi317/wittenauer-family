@@ -31,6 +31,8 @@
 .top nav a{min-height:44px;display:inline-flex;align-items:center;padding:0 16px;border-radius:22px;font-weight:600;font-size:15px;color:var(--ink2)}
 .top nav a:hover{color:var(--ink);background:rgba(255,255,255,.1)}
 .top nav a[aria-current]{color:var(--ink);background:rgba(255,255,255,.12)}
+.navadd{min-height:44px;display:inline-flex;align-items:center;gap:8px;padding:0 18px;border-radius:22px;border:0;background:var(--gold);color:var(--gold-ink);font-weight:700;font-size:15px;cursor:pointer;margin-left:6px;white-space:nowrap}
+.navadd svg{width:16px;height:16px}
 .hero .copy{position:absolute;z-index:4;left:var(--pad);bottom:120px;max-width:600px}
 .hero h1{margin:14px 0 18px;font-size:clamp(52px,8vw,112px)}
 .hero p{margin:0 0 30px;font-size:clamp(17px,1.5vw,20px);color:var(--ink2);max-width:470px}
@@ -122,7 +124,7 @@ footer{padding:60px var(--pad) max(48px,env(safe-area-inset-bottom));display:fle
 @media (max-width:820px){.logo span{display:none}.top nav a{white-space:nowrap;padding:0 12px}}
 @media (max-width:820px){
   :root{--rowh:200px}
-  .top nav a.hide-s{display:none}
+  .top nav .hide-s{display:none}
   .hero{height:72vh;height:72svh;min-height:520px}
   .hero .pic{width:100%}
   .hero .shade{background:linear-gradient(to top,#0B0B0D 4%,rgba(11,11,13,.55) 40%,rgba(11,11,13,0) 65%),linear-gradient(to bottom,rgba(11,11,13,.6) 0%,rgba(11,11,13,0) 22%)}
@@ -179,7 +181,8 @@ footer{padding:60px var(--pad) max(48px,env(safe-area-inset-bottom));display:fle
     <nav aria-label="Main">
       <a href="../" class="home"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>Home</a>
       <a href="./" aria-current="page" class="hide-s">Photos</a>
-      <a href="../hiltonhead/" id="navTrip">Hilton Head</a>
+      <a href="../hiltonhead/" id="navTrip" class="hide-s">Hilton Head</a>
+      <button type="button" class="navadd" data-add><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V4M6 10l6-6 6 6M4 20h16"/></svg>Add<span class="hide-s">&nbsp;photos</span></button>
     </nav>
   </div>
   <div class="copy">
@@ -202,9 +205,10 @@ footer{padding:60px var(--pad) max(48px,env(safe-area-inset-bottom));display:fle
 
 <section class="add">
   <div>
-    <h2 class="xd">Got photos to add?</h2>
-    <p>Send them to Jimmy, and they'll show up here, sorted into the right year.</p>
+    <h2 class="xd">Got photos or videos?</h2>
+    <p>Add them straight from your phone. Full quality, no app, no account.</p>
   </div>
+  <button class="btn btn-gold btn-add" type="button" data-add><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V4M6 10l6-6 6 6M4 20h16"/></svg>Add photos &amp; videos</button>
 </section>
 
 <footer><span><b class="xd" style="color:var(--ink);font-size:20px">WITT</b>&nbsp;&nbsp;wittenauer.family · Family only · Built by Jimmy</span><a href="../" style="text-decoration:underline">Back home</a></footer>
@@ -475,6 +479,7 @@ footer{padding:60px var(--pad) max(48px,env(safe-area-inset-bottom));display:fle
   /* ---------- Buttons ---------- */
   $("heroPlay").onclick = function () { Witt.playFilm(inAlbum("wedding"), { label: "The wedding" }); };
   $("heroAll").onclick = function () { openGrid("The wedding", inAlbum("wedding")); };
+  document.querySelectorAll("[data-add]").forEach(function (b) { b.onclick = Witt.addPhotos; });
   $("filmBtn").onclick = function () { Witt.playFilm(Witt.familyFilm(P), { label: "The Witt film" }); };
 
   Witt.wireGate(function () {

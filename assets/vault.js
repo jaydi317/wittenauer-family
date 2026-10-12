@@ -186,6 +186,36 @@
     return items;
   }
 
+
+  /* ---------- Add photos & videos (goes to the family photo library) ---------- */
+  function uploadTarget(cfg) {
+    var t = todayNY(), list = (cfg && cfg.upload) || [];
+    for (var i = 0; i < list.length; i++) if (t <= list[i].until) return list[i];
+    return null;
+  }
+  function addPhotos() {
+    Vault.config().then(function (cfg) {
+      var u = uploadTarget(cfg); if (!u) return;
+      var prev = document.activeElement;
+      var w = document.createElement("div"); w.className = "up-wrap";
+      w.innerHTML = '<div class="up" role="dialog" aria-modal="true" aria-labelledby="upT">' +
+        '<button class="icon-btn x" aria-label="Close">' + ICON.x + '</button>' +
+        '<h2 class="xd" id="upT">Add your photos &amp; videos</h2>' +
+        '<p class="lead">They go straight into <b>' + u.album + '</b> at full quality, so everyone can see them. Videos work too.</p>' +
+        '<ol><li><b class="n">1</b><span>Tap <b>Open the album</b> below.</span></li>' +
+        (u.pass ? '<li><b class="n">2</b><span>If it asks for a password, type<br><span class="pw">' + u.pass + '</span></span></li>' : '') +
+        '<li><b class="n">' + (u.pass ? 3 : 2) + '</b><span>Tap the <b>upload arrow</b> at the top, then pick your photos and videos.</span></li>' +
+        '<li><b class="n">' + (u.pass ? 4 : 3) + '</b><span>Keep that page open until they finish. That\'s it.</span></li></ol>' +
+        '<a class="btn btn-gold go" href="' + u.url + '" target="_blank" rel="noopener">Open the album</a></div>';
+      function close() { document.removeEventListener("keydown", key, true); w.remove(); if (prev) prev.focus(); }
+      function key(e) { if (e.key === "Escape") { e.stopPropagation(); close(); } }
+      w.querySelector(".x").onclick = close;
+      w.addEventListener("click", function (e) { if (e.target === w) close(); });
+      document.addEventListener("keydown", key, true);
+      document.body.appendChild(w); w.querySelector(".go").focus();
+    });
+  }
+
   window.Vault = Vault;
-  window.Witt = { wireGate: wireGate, todayNY: todayNY, dayDiff: dayDiff, prettyDate: prettyDate, thisWeekOtherYears: thisWeekOtherYears, playFilm: playFilm, familyFilm: familyFilm, ICON: ICON };
+  window.Witt = { addPhotos: addPhotos, uploadTarget: uploadTarget, wireGate: wireGate, todayNY: todayNY, dayDiff: dayDiff, prettyDate: prettyDate, thisWeekOtherYears: thisWeekOtherYears, playFilm: playFilm, familyFilm: familyFilm, ICON: ICON };
 })();
