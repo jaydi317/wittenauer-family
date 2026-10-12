@@ -1,0 +1,89 @@
+/* wittenauer.family — shared look (Cinema) */
+:root{
+  --bg:#0B0B0D; --bg2:#141317; --bg3:#1C1B20; --line:#2A2930;
+  --ink:#F4F1EA; --ink2:#D8D4CB; --mute:#A9A59C;
+  --gold:#E2B259; --gold-ink:#17130A;
+  --live:#FF5A4E;
+  --r:14px;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:Archivo,system-ui,-apple-system,sans-serif;font-size:17px;line-height:1.5;-webkit-font-smoothing:antialiased}
+a{color:inherit;text-decoration:none}
+button{font:inherit;color:inherit}
+img{display:block;max-width:100%}
+:focus-visible{outline:3px solid var(--gold);outline-offset:3px;border-radius:6px}
+.xd{font-stretch:125%;font-weight:800;letter-spacing:-.01em;line-height:.92}
+.eyebrow{font-size:13px;letter-spacing:.16em;text-transform:uppercase;font-weight:700;color:var(--gold)}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:52px;padding:0 24px;border-radius:12px;border:0;font-weight:700;font-size:17px;cursor:pointer;white-space:nowrap;transition:transform .15s ease, background .2s ease}
+.btn:active{transform:scale(.97)}
+.btn-light{background:var(--ink);color:var(--bg)}
+.btn-gold{background:var(--gold);color:var(--gold-ink)}
+.btn-glass{background:rgba(255,255,255,.14);color:var(--ink);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
+.btn-glass:hover{background:rgba(255,255,255,.22)}
+.icon-btn{width:48px;height:48px;border-radius:24px;border:0;display:grid;place-items:center;background:rgba(255,255,255,.12);cursor:pointer;-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
+.icon-btn:hover{background:rgba(255,255,255,.22)}
+.icon-btn svg{width:22px;height:22px}
+
+/* ---------- The family-word door ---------- */
+.gate{position:fixed;inset:0;z-index:900;display:grid;place-items:center;padding:24px;background:radial-gradient(120% 90% at 50% 0%, #1d1a14 0%, #0B0B0D 60%);transition:opacity .9s ease, visibility .9s}
+.gate.gone{opacity:0;visibility:hidden}
+.gate-in{width:100%;max-width:520px;text-align:center}
+.gate h1{margin:14px 0 10px;font-size:clamp(40px,11vw,76px)}
+.gate h1 span{display:inline-block;opacity:0;transform:translateY(18px);animation:rise .9s cubic-bezier(.2,.7,.2,1) forwards}
+.gate p{margin:0 auto 28px;color:var(--ink2);max-width:380px}
+.gate form{display:grid;gap:12px}
+.gate label{font-weight:700;font-size:15px;color:var(--ink2);text-align:left}
+.gate input[type=text]{width:100%;height:60px;border-radius:14px;border:1.5px solid #3A3840;background:#121115;color:var(--ink);font:600 22px Archivo,system-ui,sans-serif;padding:0 18px;text-align:center;letter-spacing:.04em}
+.gate input:focus{outline:none;border-color:var(--gold)}
+.gate .remember{display:flex;align-items:center;justify-content:center;gap:10px;font-size:15px;color:var(--mute);min-height:44px;cursor:pointer}
+.gate .remember input{width:22px;height:22px;accent-color:var(--gold)}
+.gate .err{min-height:24px;color:#FF9B8F;font-size:15px;font-weight:600}
+.gate .help{margin-top:18px;font-size:14px;color:var(--mute)}
+.gate.shake .gate-in{animation:shake .45s ease}
+.grain{pointer-events:none;position:fixed;inset:-50%;z-index:2;opacity:.06;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>")}
+@keyframes grain{0%{transform:translate(0,0)}20%{transform:translate(-3%,2%)}40%{transform:translate(2%,-3%)}60%{transform:translate(-2%,-1%)}80%{transform:translate(3%,3%)}100%{transform:translate(0,0)}}
+@keyframes rise{to{opacity:1;transform:none}}
+@keyframes shake{20%{transform:translateX(-10px)}40%{transform:translateX(10px)}60%{transform:translateX(-6px)}80%{transform:translateX(6px)}}
+
+/* ---------- Full-screen film / slideshow ---------- */
+.show{position:fixed;inset:0;z-index:1000;background:#000;overflow:hidden;cursor:none}
+.show.ui{cursor:default}
+.show .layer{position:absolute;inset:0;opacity:0;transition:opacity 1.4s ease}
+.show .layer.on{opacity:1}
+.show .layer img{width:100%;height:100%;object-fit:contain}
+.show .layer.cover img{object-fit:cover}
+.show .layer .bgblur{position:absolute;inset:-40px;background-size:cover;background-position:center;filter:blur(40px) brightness(.35);transform:scale(1.1)}
+.show .layer img.photo{position:relative}
+.kb1{animation:kb1 7s ease-out forwards}.kb2{animation:kb2 7s ease-out forwards}.kb3{animation:kb3 7s ease-out forwards}.kb4{animation:kb4 7s ease-out forwards}
+@keyframes kb1{from{transform:scale(1.02)}to{transform:scale(1.12) translate(-1.5%,-1%)}}
+@keyframes kb2{from{transform:scale(1.12) translate(1.5%,1%)}to{transform:scale(1.02)}}
+@keyframes kb3{from{transform:scale(1.04) translate(-1%,1%)}to{transform:scale(1.13) translate(1.5%,-1%)}}
+@keyframes kb4{from{transform:scale(1.13)}to{transform:scale(1.03) translate(-1%,1%)}}
+.show .title{position:absolute;inset:0;display:grid;place-items:center;text-align:center;opacity:0;transition:opacity 1s ease}
+.show .title.on{opacity:1}
+.show .title .yr{font-size:clamp(96px,22vw,260px);color:var(--ink)}
+.show .title .yr.long{font-size:clamp(56px,12vw,160px)}
+.show .title .sub{margin-top:12px}
+.show .cap{position:absolute;left:0;right:0;bottom:0;padding:120px 40px 34px;background:linear-gradient(to top,rgba(0,0,0,.75),rgba(0,0,0,0));display:flex;align-items:flex-end;justify-content:space-between;gap:20px;transition:opacity .8s}
+.show .cap .y{font-size:clamp(34px,6vw,64px)}
+.show .cap .c{font-size:clamp(16px,2.2vw,22px);color:var(--ink2);margin-top:6px}
+.show .bar{position:absolute;top:0;left:0;right:0;height:3px;background:rgba(255,255,255,.15)}
+.show .bar i{display:block;height:100%;width:0;background:var(--gold)}
+.show .ctl{position:absolute;top:max(16px,env(safe-area-inset-top));right:max(16px,env(safe-area-inset-right));display:flex;gap:10px;opacity:0;transition:opacity .3s}
+.show.ui .ctl{opacity:1}
+.show .nav{position:absolute;top:50%;transform:translateY(-50%);opacity:0;transition:opacity .3s}
+.show.ui .nav{opacity:1}
+.show .nav.prev{left:16px}.show .nav.next{right:16px}
+.show .paused{position:absolute;top:22px;left:20px;font-size:14px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--gold);opacity:0;transition:opacity .3s}
+.show.is-paused .paused{opacity:1}
+@media (max-width:700px){.show .cap{padding:90px 20px 28px}.show .nav{display:none}}
+@media (prefers-reduced-motion:reduce){.kb1,.kb2,.kb3,.kb4{animation:none}.grain{display:none}.gate h1 span{animation:none;opacity:1;transform:none}}
+
+/* Soft shimmer while a locked photo is opening */
+.shim{background:linear-gradient(100deg,#1C1B20 30%,#26252B 50%,#1C1B20 70%) #1C1B20;background-size:300% 100%;animation:shim 1.6s ease-in-out infinite}
+@keyframes shim{from{background-position:100% 0}to{background-position:0 0}}
+@media (prefers-reduced-motion:reduce){.shim{animation:none}}

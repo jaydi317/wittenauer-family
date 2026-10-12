@@ -1,0 +1,492 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<meta name="witt-root" content="../">
+<meta name="theme-color" content="#0B0B0D">
+<link rel="icon" href="../favicon.png" type="image/png">
+<link rel="apple-touch-icon" href="../apple-touch-icon.png">
+<link rel="manifest" href="../manifest.webmanifest">
+<meta name="apple-mobile-web-app-title" content="The Witts">
+<title>Family Photos · The Wittenauers</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&display=swap">
+<link rel="stylesheet" href="../assets/witt.css">
+<style>
+:root{--pad:clamp(20px,4.4vw,64px);--rowh:300px}
+/* ---------- Hero ---------- */
+.hero{position:relative;height:80vh;height:80svh;min-height:580px;overflow:hidden;background:#000}
+.hero .pic{position:absolute;right:0;top:0;width:66%;height:100%;opacity:0;transition:opacity 1.6s ease}
+.hero .pic.on{opacity:1}
+.hero .pic img{width:100%;height:100%;object-fit:cover;object-position:50% 28%}
+.hero .shade{position:absolute;inset:0;background:linear-gradient(90deg,#0B0B0D 33%,rgba(11,11,13,.78) 47%,rgba(11,11,13,0) 72%),linear-gradient(to top,#0B0B0D 0%,rgba(11,11,13,0) 34%),linear-gradient(to bottom,rgba(11,11,13,.6) 0%,rgba(11,11,13,0) 20%)}
+.top{position:absolute;top:0;left:0;right:0;z-index:5;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:22px var(--pad);padding-top:max(22px,env(safe-area-inset-top))}
+.logo{display:flex;align-items:baseline;gap:12px}
+.logo b{font-size:28px}
+.logo span{font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink2)}
+.top nav{display:flex;gap:6px}
+.top nav a{min-height:44px;display:inline-flex;align-items:center;padding:0 16px;border-radius:22px;font-weight:600;font-size:15px;color:var(--ink2)}
+.top nav a:hover{color:var(--ink);background:rgba(255,255,255,.1)}
+.top nav a[aria-current]{color:var(--ink);background:rgba(255,255,255,.12)}
+.hero .copy{position:absolute;z-index:4;left:var(--pad);bottom:120px;max-width:600px}
+.hero h1{margin:14px 0 18px;font-size:clamp(52px,8vw,112px)}
+.hero p{margin:0 0 30px;font-size:clamp(17px,1.5vw,20px);color:var(--ink2);max-width:470px}
+.hero .btns{display:flex;gap:12px;flex-wrap:wrap}
+.hero .btns .btn{min-height:56px}
+
+/* ---------- Rows ---------- */
+.rows{position:relative;z-index:5;margin-top:-70px;padding-bottom:20px}
+.row{margin-bottom:44px;position:relative}
+.rh{display:flex;align-items:baseline;justify-content:space-between;gap:16px;padding:0 var(--pad);margin-bottom:14px}
+.rh h2{margin:0;font-size:22px;font-weight:700}
+.rh h2 small{font-weight:500;color:var(--mute);font-size:15px;margin-left:10px}
+.rh .all{background:none;border:0;color:var(--gold);font-weight:700;font-size:15px;cursor:pointer;min-height:44px;padding:0 4px}
+.scroller{display:flex;gap:12px;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x proximity;scroll-padding:0 var(--pad);padding:4px var(--pad) 10px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.scroller::-webkit-scrollbar{display:none}
+.tile{flex:none;height:var(--rowh);border-radius:12px;overflow:hidden;border:0;padding:0;cursor:pointer;position:relative;scroll-snap-align:start}
+.tile img{width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .7s ease, transform .5s ease}
+.tile img.on{opacity:1}
+.tile:hover img{transform:scale(1.05)}
+.tile .lab{position:absolute;left:0;right:0;bottom:0;padding:44px 14px 12px;text-align:left;background:linear-gradient(to top,rgba(0,0,0,.8),rgba(0,0,0,0));font-size:14px;font-weight:600;opacity:0;transition:opacity .25s}
+.tile:hover .lab,.tile:focus-visible .lab{opacity:1}
+.tile .ago{position:absolute;left:12px;top:12px;background:rgba(0,0,0,.6);color:var(--gold);font-size:13px;font-weight:800;letter-spacing:.06em;padding:5px 10px;border-radius:14px}
+.arrow{position:absolute;top:calc(50% + 18px);transform:translateY(-50%);z-index:3;opacity:0;transition:opacity .2s}
+.row:hover .arrow{opacity:1}
+.arrow.l{left:12px}.arrow.r{right:12px}
+.years{display:flex;gap:10px;flex-wrap:wrap;padding:0 var(--pad)}
+.chip{display:inline-flex;align-items:center;gap:10px;min-height:64px;padding:0 22px 0 8px;border-radius:32px;background:var(--bg3);border:0;cursor:pointer;font-weight:800;font-size:20px;font-stretch:125%}
+.chip:hover{background:#26252b}
+.chip i{width:48px;height:48px;border-radius:24px;overflow:hidden;background:#2a2930}
+.chip i img{width:100%;height:100%;object-fit:cover}
+.chip small{font-size:14px;font-weight:600;font-stretch:100%;color:var(--mute)}
+.add{margin:30px var(--pad) 0;border-radius:18px;background:var(--bg2);padding:34px 40px;display:flex;align-items:center;justify-content:space-between;gap:24px;flex-wrap:wrap}
+.add h2{margin:0 0 6px;font-size:clamp(26px,3vw,40px)}
+.add p{margin:0;color:var(--ink2)}
+footer{padding:60px var(--pad) max(48px,env(safe-area-inset-bottom));display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;color:var(--mute);font-size:14px}
+
+/* ---------- Album / year grid ---------- */
+.ov{position:fixed;inset:0;z-index:800;background:var(--bg);overflow-y:auto;-webkit-overflow-scrolling:touch}
+.ov[hidden],.lb[hidden],.sheet-wrap[hidden]{display:none}
+.ovh{position:sticky;top:0;z-index:2;display:flex;align-items:center;gap:14px;padding:14px var(--pad);padding-top:max(14px,env(safe-area-inset-top));background:rgba(11,11,13,.92);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
+.ovh .tt{flex:1;min-width:0}
+.ovh h2{margin:0;font-size:clamp(22px,3vw,34px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ovh .cnt{font-size:14px;color:var(--mute)}
+.ovacts{display:flex;gap:10px;flex-wrap:wrap;padding:16px var(--pad) 0}
+.ovacts .btn{min-height:50px;padding:0 20px;font-size:16px}
+.top nav a.home svg{margin-right:4px}
+.grid{columns:4 240px;column-gap:12px;padding:18px var(--pad) 60px}
+.grid button{display:block;width:100%;margin:0 0 12px;break-inside:avoid;border:0;padding:0;border-radius:10px;overflow:hidden;cursor:pointer}
+.grid img{width:100%;height:auto;opacity:0;transition:opacity .6s}
+.grid img.on{opacity:1}
+.zipmsg{padding:0 var(--pad);color:var(--gold);font-weight:700;min-height:0}
+
+/* ---------- Photo viewer ---------- */
+.lb{position:fixed;inset:0;z-index:850;background:#000;touch-action:pan-y}
+.lb .stage{position:absolute;inset:0;display:grid;place-items:center}
+.lb .stage img{max-width:100%;max-height:100%;object-fit:contain;transition:opacity .25s}
+.lb .stage img.dim{opacity:.25}
+.lb .bar{position:absolute;top:0;left:0;right:0;display:flex;align-items:center;justify-content:space-between;padding:14px 16px;padding-top:max(14px,env(safe-area-inset-top));background:linear-gradient(to bottom,rgba(0,0,0,.7),rgba(0,0,0,0))}
+.lb .num{font-size:15px;font-weight:600;color:var(--ink2)}
+.lb .foot{position:absolute;left:0;right:0;bottom:0;padding:70px 20px max(22px,env(safe-area-inset-bottom));background:linear-gradient(to top,rgba(0,0,0,.85),rgba(0,0,0,0));display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.lb .foot .y{font-size:26px}
+.lb .foot .c{color:var(--ink2);font-size:16px}
+.lb .foot .acts{display:flex;gap:10px}
+.lb .side{position:absolute;top:50%;transform:translateY(-50%)}
+.lb .side.l{left:16px}.lb .side.r{right:16px}
+
+/* ---------- Save sheet ---------- */
+.sheet-wrap{position:fixed;inset:0;z-index:900;background:rgba(0,0,0,.55);display:flex;align-items:flex-end;justify-content:center}
+.sheet{width:100%;max-width:520px;background:#17161A;border-radius:22px 22px 0 0;padding:10px 22px max(26px,env(safe-area-inset-bottom));box-shadow:0 -10px 40px rgba(0,0,0,.5);animation:up .3s cubic-bezier(.2,.8,.2,1)}
+@keyframes up{from{transform:translateY(40px);opacity:0}}
+.sheet .grab{width:40px;height:5px;border-radius:3px;background:#3A393F;margin:0 auto 16px}
+.sheet h2{margin:0 0 4px;font-size:26px}
+.sheet .q{margin:0 0 14px;color:var(--ink2);font-size:15px}
+.devs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.devs button{min-height:88px;border-radius:14px;border:1px solid #34333A;background:transparent;display:grid;justify-items:center;align-content:center;gap:6px;font-weight:700;font-size:15px;cursor:pointer}
+.devs button svg{width:26px;height:26px;color:var(--ink2)}
+.devs button[aria-pressed=true]{border:2px solid var(--gold);background:#26231C}
+.devs button[aria-pressed=true] svg{color:var(--gold)}
+.steps{list-style:none;margin:16px 0;padding:0;display:grid;gap:10px;font-size:16px}
+.steps li{display:flex;gap:12px;align-items:center}
+.steps li b.n{flex:0 0 28px;height:28px;border-radius:14px;background:#2A2930;display:grid;place-items:center;font-size:14px}
+.sheet .main{width:100%;min-height:58px;font-size:18px}
+.sheet .alt{display:block;width:100%;background:none;border:0;color:var(--ink2);text-decoration:underline;font-size:15px;min-height:44px;margin-top:6px;cursor:pointer}
+.sheet .done{min-height:24px;text-align:center;color:var(--gold);font-weight:700;margin-top:6px}
+.sheet .x{position:absolute;right:14px;top:12px}
+.sheet{position:relative}
+
+@media (min-width:821px){.sheet-wrap{align-items:center}.sheet{border-radius:22px}}
+@media (max-width:820px){.logo span{display:none}.top nav a{white-space:nowrap;padding:0 12px}}
+@media (max-width:820px){
+  :root{--rowh:200px}
+  .top nav a.hide-s{display:none}
+  .hero{height:72vh;height:72svh;min-height:520px}
+  .hero .pic{width:100%}
+  .hero .shade{background:linear-gradient(to top,#0B0B0D 4%,rgba(11,11,13,.55) 40%,rgba(11,11,13,0) 65%),linear-gradient(to bottom,rgba(11,11,13,.6) 0%,rgba(11,11,13,0) 22%)}
+  .hero .copy{left:20px;right:20px;bottom:80px}
+  .hero h1{margin:8px 0 10px}
+  .hero p{display:none}
+  .hero .btns .btn{flex:1;min-height:52px;padding:0 14px;font-size:16px}
+  .rows{margin-top:-30px}
+  .row{margin-bottom:32px}
+  .rh h2{font-size:19px}
+  .rh h2 small{display:block;margin:2px 0 0;font-size:14px}
+  .arrow{display:none}
+  .tile .lab{display:none}
+  .chip{min-height:56px;font-size:18px}
+  .chip i{width:40px;height:40px}
+  .add{padding:24px 22px}
+  .add .btn{width:100%}
+  .ovacts .btn{flex:1}
+  .ovh h2{white-space:normal}
+  .grid{columns:2 140px;column-gap:8px}
+  .grid button{margin-bottom:8px}
+  .lb .side{display:none}
+  .lb .foot .acts{width:100%}
+  .lb .foot .acts .btn{flex:1}
+}
+</style>
+<script src="../assets/photos.js"></script>
+<script src="../assets/vault.js"></script>
+</head>
+<body>
+
+<div class="gate" id="gate">
+  <div class="grain" aria-hidden="true"></div>
+  <div class="gate-in">
+    <div class="eyebrow">wittenauer.family</div>
+    <h1 class="xd"><span style="animation-delay:.1s">THE</span> <span style="animation-delay:.35s">WITTS</span></h1>
+    <p>This is our family's private place for photos, trips and everything in between.</p>
+    <form autocomplete="off">
+      <label for="word">Type the family word</label>
+      <input id="word" name="word" type="text" autocapitalize="none" autocorrect="off" spellcheck="false" enterkeyhint="go" required>
+      <label class="remember"><input id="remember" type="checkbox" checked> Remember this phone or computer</label>
+      <button class="btn btn-gold" type="submit" style="width:100%;min-height:60px;font-size:19px">Come in</button>
+      <div class="err" role="alert"></div>
+    </form>
+    <div class="help">Don't know it? Ask Jimmy or Amy.</div>
+  </div>
+</div>
+
+<header class="hero">
+  <div class="pic" id="heroPic"></div>
+  <div class="shade"></div>
+  <div class="top">
+    <a class="logo" href="../"><b class="xd">WITT</b><span>Photos</span></a>
+    <nav aria-label="Main">
+      <a href="../" class="home"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>Home</a>
+      <a href="./" aria-current="page" class="hide-s">Photos</a>
+      <a href="../hiltonhead/" id="navTrip">Hilton Head</a>
+    </nav>
+  </div>
+  <div class="copy">
+    <div class="eyebrow">Featured · September 19, 2026</div>
+    <h1 class="xd">THE<br>WEDDING</h1>
+    <p>Jimmy and Amy, and everyone they love. Every photo from the big day, from the night before to the last song.</p>
+    <div class="btns">
+      <button class="btn btn-light" type="button" id="heroPlay"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4.5v15l13-7.5z"/></svg>Slideshow</button>
+      <button class="btn btn-glass" type="button" id="heroAll">See every photo</button>
+    </div>
+  </div>
+</header>
+
+<main class="rows" id="rows"></main>
+
+<section aria-label="Pick a year" style="padding-top:8px">
+  <div class="rh"><h2>Pick a year</h2><button class="all" type="button" id="filmBtn">&#9654;&nbsp; Play the whole Witt film</button></div>
+  <div class="years" id="years"></div>
+</section>
+
+<section class="add">
+  <div>
+    <h2 class="xd">Got photos to add?</h2>
+    <p>Send them to Jimmy, and they'll show up here, sorted into the right year.</p>
+  </div>
+</section>
+
+<footer><span><b class="xd" style="color:var(--ink);font-size:20px">WITT</b>&nbsp;&nbsp;wittenauer.family · Family only · Built by Jimmy</span><a href="../" style="text-decoration:underline">Back home</a></footer>
+
+<!-- Album / year grid -->
+<div class="ov" id="ov" hidden role="dialog" aria-modal="true" aria-labelledby="ovTitle">
+  <div class="ovh">
+    <button class="icon-btn" id="ovBack" aria-label="Back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>
+    <div class="tt"><h2 class="xd" id="ovTitle"></h2><div class="cnt" id="ovCount"></div></div>
+  </div>
+  <div class="ovacts">
+    <button class="btn btn-glass" id="ovPlay"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4.5v15l13-7.5z"/></svg>Slideshow</button>
+    <button class="btn btn-gold" id="ovZip"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v12M6 10l6 6 6-6M4 20h16"/></svg><span id="ovZipLabel">Download all</span></button>
+  </div>
+  <div class="zipmsg" id="zipMsg" aria-live="polite"></div>
+  <div class="grid" id="grid"></div>
+</div>
+
+<!-- Photo viewer -->
+<div class="lb" id="lb" hidden role="dialog" aria-modal="true" aria-label="Photo viewer">
+  <div class="stage"><img id="lbImg" alt=""></div>
+  <div class="bar">
+    <span class="num" id="lbNum"></span>
+    <button class="icon-btn" id="lbClose" aria-label="Close photo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+  </div>
+  <button class="icon-btn side l" id="lbPrev" aria-label="Previous photo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>
+  <button class="icon-btn side r" id="lbNext" aria-label="Next photo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></button>
+  <div class="foot">
+    <div><div class="y xd" id="lbYear"></div><div class="c" id="lbCap"></div></div>
+    <div class="acts">
+      <button class="btn btn-glass" id="lbPlay"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4.5v15l13-7.5z"/></svg>Slideshow</button>
+      <button class="btn btn-gold" id="lbSave"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v12M6 10l6 6 6-6M4 20h16"/></svg>Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Save sheet -->
+<div class="sheet-wrap" id="sheetWrap" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
+    <div class="grab" aria-hidden="true"></div>
+    <button class="icon-btn x" id="sheetClose" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+    <h2 class="xd" id="sheetTitle">Save this photo</h2>
+    <p class="q">What are you using right now?</p>
+    <div class="devs" role="group" aria-label="Your device">
+      <button type="button" data-dev="iphone" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="7" y="2" width="10" height="20" rx="2.5"/><path d="M11 18.5h2"/></svg>iPhone or iPad</button>
+      <button type="button" data-dev="android" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="6" y="2" width="12" height="20" rx="2"/><path d="M6 5h12M6 19h12"/></svg>Android</button>
+      <button type="button" data-dev="computer" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="4" width="18" height="12" rx="1.5"/><path d="M8 20h8M12 16v4"/></svg>Computer</button>
+    </div>
+    <ol class="steps" id="steps"></ol>
+    <button class="btn btn-gold main" id="saveGo"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v12M6 10l6 6 6-6M4 20h16"/></svg><span id="saveLabel">Save full-size photo</span></button>
+    <div class="done" id="saveDone" aria-live="polite"></div>
+    <button class="alt" id="saveAll">Save the whole album instead</button>
+  </div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+  var P = window.WITT_PHOTOS, byId = {};
+  P.forEach(function (p) { byId[p.id] = p; });
+  var small = matchMedia("(max-width: 820px)").matches;
+  var $ = function (id) { return document.getElementById(id); };
+  var ICON = Witt.ICON;
+  var ua = navigator.userAgent || "";
+  var isIOS = /iPhone|iPad|iPod/.test(ua) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  var ALBUMS = {
+    wedding:   { title: "The wedding", sub: "September 19, 2026" },
+    christmas: { title: "Christmas through the years", sub: "2019 and 2025" },
+    beach:     { title: "Beach weeks", sub: "October, every time" },
+    easter:    { title: "Easter", sub: "2019 and 2021" },
+    everyday:  { title: "Everyday Witts", sub: "The in-between days" }
+  };
+  function byDate(a, b) { return (a.date || "9") < (b.date || "9") ? -1 : 1; }
+  function inAlbum(k) { return P.filter(function (p) { return p.album === k; }).sort(byDate); }
+  function esc(s) { return String(s || "").replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
+  function plural(n) { return n + (n === 1 ? " photo" : " photos"); }
+
+  /* Lazy-load locked photos as they scroll into view. */
+  var io = "IntersectionObserver" in window ? new IntersectionObserver(function (es) {
+    es.forEach(function (e) { if (e.isIntersecting) { io.unobserve(e.target); fill(e.target); } });
+  }, { rootMargin: "400px 400px" }) : null;
+  function fill(img) { Vault.url(img.dataset.id, img.dataset.size || "t").then(function (u) { img.onload = function () { img.classList.add("on"); }; img.src = u; }); }
+  function watch(img) { if (io) io.observe(img); else fill(img); }
+
+  /* ---------- Layers (grid, viewer, sheet) work with the phone's Back button ---------- */
+  function pushLayer(name, hash) { history.pushState({ witt: name }, "", hash || location.pathname + location.search); }
+  function back() { history.back(); }
+  window.addEventListener("popstate", function () {
+    if (document.querySelector(".show")) return;
+    if (!$("sheetWrap").hidden) closeSheet();
+    else if (!$("lb").hidden) closeViewer();
+    else if (!$("ov").hidden) closeGrid();
+  });
+
+  /* ---------- Rows ---------- */
+  function row(title, sub, list, key, agoLabels) {
+    if (!list.length) return;
+    var sec = document.createElement("section"); sec.className = "row";
+    sec.innerHTML = '<div class="rh"><h2>' + esc(title) + (sub ? '<small>' + esc(sub) + '</small>' : '') + '</h2>' +
+      (key ? '<button class="all" type="button">See all ' + list.length + '</button>' : '') + '</div><div class="scroller"></div>' +
+      '<button class="icon-btn arrow l" aria-label="Scroll left">' + ICON.prev + '</button><button class="icon-btn arrow r" aria-label="Scroll right">' + ICON.next + '</button>';
+    var sc = sec.querySelector(".scroller"), h = small ? 200 : 300;
+    list.forEach(function (p, k) {
+      var b = document.createElement("button"); b.type = "button"; b.className = "tile shim";
+      b.style.width = Math.round(h * Math.min(1.6, Math.max(.66, p.w / p.h))) + "px";
+      b.setAttribute("aria-label", p.caption + (p.date ? ", " + Witt.prettyDate(p.date) : ""));
+      b.innerHTML = '<img alt="" data-id="' + p.id + '" data-size="' + (small ? "t" : "m") + '" style="object-position:' + p.focus + '">' +
+        (agoLabels ? '<span class="ago">' + (p.ago === 1 ? "1 year ago" : p.ago + " years ago") + '</span>' : '') + '<span class="lab">' + esc(p.caption) + '</span>';
+      b.onclick = function () { openViewer(list, k); };
+      sc.appendChild(b); watch(b.querySelector("img"));
+    });
+    if (key) sec.querySelector(".all").onclick = function () { openGrid(ALBUMS[key].title, list); };
+    sec.querySelector(".arrow.l").onclick = function () { sc.scrollBy({ left: -sc.clientWidth * .8, behavior: "smooth" }); };
+    sec.querySelector(".arrow.r").onclick = function () { sc.scrollBy({ left: sc.clientWidth * .8, behavior: "smooth" }); };
+    $("rows").appendChild(sec);
+  }
+  function build() {
+    var wk = Witt.thisWeekOtherYears(P, Witt.todayNY(), 10);
+    row("This week, in other years", "Same week, different years", wk, null, true);
+    ["wedding", "christmas", "beach", "easter", "everyday"].forEach(function (k) { row(ALBUMS[k].title, ALBUMS[k].sub, inAlbum(k), k); });
+    var years = {}; P.forEach(function (p) { if (p.date) { var y = p.date.slice(0, 4); (years[y] = years[y] || []).push(p); } });
+    Object.keys(years).sort().forEach(function (y) {
+      var list = years[y].sort(byDate), c = document.createElement("button"); c.type = "button"; c.className = "chip";
+      c.innerHTML = '<i class="shim"><img alt="" data-id="' + list[0].id + '" data-size="t" style="object-position:' + list[0].focus + '"></i>' + y + ' <small>' + plural(list.length) + '</small>';
+      c.onclick = function () { openGrid("The Witts in " + y, list); };
+      $("years").appendChild(c); watch(c.querySelector("img"));
+    });
+    Vault.url("w26m", small ? "m" : "f").then(function (u) { $("heroPic").innerHTML = '<img alt="Amy dancing at the wedding" src="' + u + '">'; $("heroPic").classList.add("on"); });
+    Vault.config().then(function (cfg) { if (Witt.todayNY() > cfg.trip.gone) $("navTrip").remove(); }).catch(function () {});
+  }
+
+  /* ---------- Album / year grid ---------- */
+  var gridList = [], gridTitle = "", gridFocus = null, prepared = null;
+  function openGrid(title, list) {
+    gridList = list; gridTitle = title; gridFocus = document.activeElement; prepared = null;
+    $("ovTitle").textContent = title; $("ovCount").textContent = plural(list.length); $("zipMsg").textContent = "";
+    $("ovZipLabel").textContent = isIOS ? "Save all to Photos" : "Download all";
+    var g = $("grid"); g.innerHTML = "";
+    list.forEach(function (p, k) {
+      var b = document.createElement("button"); b.type = "button"; b.className = "shim"; b.setAttribute("aria-label", p.caption);
+      b.innerHTML = '<img alt="" data-id="' + p.id + '" data-size="t" width="' + p.w + '" height="' + p.h + '">';
+      b.onclick = function () { openViewer(list, k); }; g.appendChild(b); watch(b.querySelector("img"));
+    });
+    $("ov").hidden = false; $("ov").scrollTop = 0; document.body.style.overflow = "hidden"; $("ovBack").focus();
+    pushLayer("grid");
+  }
+  function closeGrid() { $("ov").hidden = true; document.body.style.overflow = ""; if (gridFocus) gridFocus.focus(); }
+  $("ovBack").onclick = back;
+  $("ovPlay").onclick = function () { Witt.playFilm(gridList, { label: gridTitle }); };
+  $("ovZip").onclick = function () {
+    if (!isIOS) { zip(gridList, gridTitle, $("zipMsg")); return; }
+    /* iPhone: get every photo ready first, then one tap hands them all to Photos. */
+    if (prepared) { shareFiles(prepared, $("zipMsg")); return; }
+    prepare(gridList, $("zipMsg")).then(function (files) {
+      prepared = files; $("ovZipLabel").textContent = "Tap to save " + plural(files.length);
+      $("zipMsg").textContent = "Ready. Tap the gold button, then choose Save Images.";
+    });
+  };
+
+  /* ---------- Photo viewer ---------- */
+  var vList = [], vi = 0, vFocus = null;
+  function openViewer(list, k, fromLink) {
+    vList = list; vFocus = document.activeElement; $("lb").hidden = false; document.body.style.overflow = "hidden";
+    pushLayer("viewer", "#p=" + list[k].id); show(k); $("lbClose").focus();
+  }
+  function show(k) {
+    vi = (k + vList.length) % vList.length; var p = vList[vi], img = $("lbImg");
+    img.classList.add("dim"); img.dataset.full = "";
+    Vault.url(p.id, "t").then(function (u) { if (vList[vi] === p && !img.dataset.full) img.src = u; });
+    Vault.url(p.id, small ? "m" : "f").then(function (u) { if (vList[vi] !== p) return; img.src = u; img.dataset.full = "1"; img.alt = p.caption; img.classList.remove("dim"); });
+    $("lbNum").textContent = (vi + 1) + " of " + vList.length;
+    $("lbYear").textContent = p.date ? Witt.prettyDate(p.date) : "";
+    $("lbCap").textContent = p.caption;
+    Vault.url(vList[(vi + 1) % vList.length].id, small ? "m" : "f");
+    history.replaceState({ witt: "viewer" }, "", "#p=" + p.id);
+  }
+  function closeViewer() { $("lb").hidden = true; if ($("ov").hidden) document.body.style.overflow = ""; if (vFocus) vFocus.focus(); }
+  $("lbClose").onclick = back;
+  $("lbPrev").onclick = function () { show(vi - 1); };
+  $("lbNext").onclick = function () { show(vi + 1); };
+  $("lbPlay").onclick = function () { Witt.playFilm(vList, { start: vi, label: "Slideshow" }); };
+  $("lbSave").onclick = function () { openSheet(vList[vi]); };
+  var sx = null, sy = null;
+  $("lb").addEventListener("touchstart", function (e) { sx = e.touches[0].clientX; sy = e.touches[0].clientY; }, { passive: true });
+  $("lb").addEventListener("touchend", function (e) {
+    if (sx == null || e.target.closest("button")) { sx = null; return; }
+    var dx = e.changedTouches[0].clientX - sx, dy = e.changedTouches[0].clientY - sy;
+    if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy)) show(vi + (dx < 0 ? 1 : -1));
+    else if (dy > 90 && Math.abs(dy) > Math.abs(dx)) back();
+    sx = null;
+  });
+  document.addEventListener("keydown", function (e) {
+    if (document.querySelector(".show")) return;
+    if (!$("sheetWrap").hidden) { if (e.key === "Escape") back(); return; }
+    if (!$("lb").hidden) { if (e.key === "Escape") back(); else if (e.key === "ArrowRight") show(vi + 1); else if (e.key === "ArrowLeft") show(vi - 1); return; }
+    if (!$("ov").hidden && e.key === "Escape") back();
+  });
+
+  /* ---------- Save sheet: plain steps for the device in your hand ---------- */
+  var dev = isIOS ? "iphone" : (/Android/.test(ua) ? "android" : "computer"), sheetPhoto = null, sheetBlob = null;
+  var STEPS = {
+    iphone:   ["Tap the gold button below.", "Choose <b>Save Image</b>.", "It's in your Photos app. That's it."],
+    android:  ["Tap the gold button below.", "The photo downloads to your phone.", "Find it in your Photos or Gallery app."],
+    computer: ["Click the gold button below.", "The photo saves to your Downloads folder.", "Open it from there, or print it."]
+  };
+  function setDev(d) {
+    dev = d;
+    document.querySelectorAll(".devs button").forEach(function (b) { b.setAttribute("aria-pressed", String(b.dataset.dev === d)); });
+    $("steps").innerHTML = STEPS[d].map(function (s, i) { return '<li><b class="n">' + (i + 1) + '</b><span>' + s + '</span></li>'; }).join("");
+    $("saveAll").hidden = d === "iphone";
+  }
+  document.querySelectorAll(".devs button").forEach(function (b) { b.onclick = function () { setDev(b.dataset.dev); }; });
+  function openSheet(p) {
+    sheetPhoto = p; sheetBlob = null; $("saveDone").textContent = ""; setDev(dev);
+    $("saveLabel").textContent = "Getting it ready…";
+    /* Fetch the full-size photo now, so the tap below can hand it over instantly (iPhone needs that). */
+    Vault.blob(p.id, "f").then(function (b) { if (sheetPhoto === p) { sheetBlob = b; $("saveLabel").textContent = "Save full-size photo"; } })
+      .catch(function () { $("saveLabel").textContent = "Save full-size photo"; });
+    $("sheetWrap").hidden = false; $("saveGo").focus(); pushLayer("sheet", location.hash);
+  }
+  function closeSheet() { $("sheetWrap").hidden = true; $("lbSave").focus(); }
+  $("sheetClose").onclick = back;
+  $("sheetWrap").addEventListener("click", function (e) { if (e.target === $("sheetWrap")) back(); });
+  function fname(p) { return "Witts-" + (p.date || "photo") + "-" + p.caption.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") + ".jpg"; }
+  function download(blob, name) { var u = URL.createObjectURL(blob), a = document.createElement("a"); a.href = u; a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(function () { URL.revokeObjectURL(u); }, 4000); }
+  async function shareFiles(files, msg) {
+    try {
+      if (navigator.canShare && navigator.canShare({ files: files })) { await navigator.share({ files: files }); msg.textContent = "Done. Look in your Photos app."; return true; }
+    } catch (e) { if (e && e.name === "AbortError") { msg.textContent = ""; return true; } }
+    return false;
+  }
+  $("saveGo").onclick = async function () {
+    var p = sheetPhoto, msg = $("saveDone");
+    try {
+      var blob = sheetBlob || await Vault.blob(p.id, "f");
+      if (dev === "iphone") {
+        var ok = await shareFiles([new File([blob], fname(p), { type: "image/jpeg" })], msg);
+        if (!ok) { download(blob, fname(p)); msg.textContent = "If it opened, press and hold the photo, then tap Save to Photos."; }
+      } else { download(blob, fname(p)); msg.textContent = dev === "computer" ? "Saved to your Downloads folder." : "Saved. Check your Photos or Downloads."; }
+    } catch (e) { msg.textContent = "That didn't work. Try once more?"; }
+  };
+  $("saveAll").onclick = function () {
+    var same = vList.every(function (p) { return p.album === vList[0].album; });
+    zip(vList, same ? ALBUMS[vList[0].album].title : "The Witts", $("saveDone"));
+  };
+
+  /* Get a set of photos ready (decrypted) with a progress line. */
+  async function prepare(list, msg) {
+    var out = [];
+    for (var k = 0; k < list.length; k++) { msg.textContent = "Getting photo " + (k + 1) + " of " + list.length + " ready…"; out.push(new File([await Vault.blob(list[k].id, "f")], fname(list[k]), { type: "image/jpeg" })); }
+    return out;
+  }
+  /* Download a whole album as one zip file (computer and Android). */
+  var zipping = false;
+  async function zip(list, title, msg) {
+    if (zipping) return; zipping = true;
+    try {
+      if (!window.JSZip) await new Promise(function (res, rej) { var s = document.createElement("script"); s.src = "../assets/jszip.min.js"; s.onload = res; s.onerror = rej; document.head.appendChild(s); });
+      var z = new JSZip(), files = await prepare(list, msg);
+      files.forEach(function (f) { z.file(f.name, f); });
+      msg.textContent = "Almost done…";
+      download(await z.generateAsync({ type: "blob" }), title.replace(/[^A-Za-z0-9]+/g, "-") + ".zip");
+      msg.textContent = "Downloaded " + plural(list.length) + ". Check your Downloads folder.";
+    } catch (e) { msg.textContent = "That didn't work. Try again on Wi-Fi?"; }
+    zipping = false;
+  }
+
+  /* ---------- Buttons ---------- */
+  $("heroPlay").onclick = function () { Witt.playFilm(inAlbum("wedding"), { label: "The wedding" }); };
+  $("heroAll").onclick = function () { openGrid("The wedding", inAlbum("wedding")); };
+  $("filmBtn").onclick = function () { Witt.playFilm(Witt.familyFilm(P), { label: "The Witt film" }); };
+
+  Witt.wireGate(function () {
+    build();
+    var m = location.hash.match(/p=([a-z0-9]+)/);
+    if (m && byId[m[1]]) {
+      var p = byId[m[1]], list = inAlbum(p.album);
+      history.replaceState(null, "", location.pathname + location.search);
+      openViewer(list, list.indexOf(p));
+    }
+  });
+})();
+</script>
+</body>
+</html>
