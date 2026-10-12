@@ -143,8 +143,16 @@
     var titleEl = el.querySelector(".title"), cap = el.querySelector(".cap"), kb = 0, alive = true;
     var reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
     function poke() { el.classList.add("ui"); clearTimeout(uiT); uiT = setTimeout(function () { el.classList.remove("ui"); }, 2600); }
+    var startItem = items[opts.start || 0];
+    while (startItem && startItem.video && items.indexOf(startItem) < items.length - 1) startItem = items[items.indexOf(startItem) + 1];
     items = items.filter(function (it) { return it.title || !it.video; });
-    function preload(k) { var it = items[k]; if (it && it.id) src(it, size); }
+    if (!items.length) return null;
+    opts.start = Math.max(0, items.indexOf(startItem));
+    function ready(it) { /* fetch and decode before fading in, so slides never flash blank */
+      return src(it, size).then(function (u) { return new Promise(function (res) { var im = new Image(); im.onload = function () { (im.decode ? im.decode() : Promise.resolve()).then(function () { res(u); }, function () { res(u); }); }; im.onerror = function () { res(u); }; im.src = u; }); });
+    }
+    var readyCache = {};
+    function preload(k) { var it = items[k]; if (it && it.id && !readyCache[it.id]) readyCache[it.id] = ready(it); }
     function dur(it) { return it.title ? 2600 : 5600; }
     function runBar(ms) { bar.style.transition = "none"; bar.style.width = ((i) / items.length * 100) + "%"; void bar.offsetWidth; bar.style.transition = "width " + ms + "ms linear"; bar.style.width = ((i + 1) / items.length * 100) + "%"; }
     function go(n) {
@@ -156,7 +164,8 @@
         var yr = titleEl.querySelector(".yr"); yr.textContent = it.title; yr.classList.toggle("long", String(it.title).length > 4); titleEl.querySelector(".sub").textContent = it.sub || "";
         titleEl.classList.add("on"); layers[cur].classList.remove("on"); cap.style.opacity = 0; schedule(it); return;
       }
-      src(it, size).then(function (u) {
+      if (!readyCache[it.id]) readyCache[it.id] = ready(it);
+      readyCache[it.id].then(function (u) {
         if (!alive || items[i] !== it) return;
         var nxt = 1 - cur, L = layers[nxt]; var portrait = it.h > it.w;
         L.className = "layer" + (portrait || small ? "" : " cover");
@@ -172,7 +181,9 @@
     }
     function schedule(it, ms) { ms = ms || dur(it); if (!paused) { runBar(ms); timer = setTimeout(function () { go(i + 1); }, ms); } }
     function toggle() { paused = !paused; el.classList.toggle("is-paused", paused); var b = el.querySelector(".pp"); b.innerHTML = paused ? ICON.play : ICON.pause; b.setAttribute("aria-label", paused ? "Play" : "Pause"); if (paused) { clearTimeout(timer); bar.style.transition = "none"; } else go(i + 1); }
-    function close() { alive = false; clearTimeout(timer); clearTimeout(uiT); document.removeEventListener("keydown", key, true); try { if (document.fullscreenElement) document.exitFullscreen(); } catch (e) {} el.remove(); document.body.style.overflow = prevOverflow; if (opts.onClose) opts.onClose(); }
+    var popped = false;
+    function onPop() { popped = true; close(); }
+    function close() { if (!alive) return; if (!popped) { popped = true; window.removeEventListener("popstate", onPop); if (window.Witt) window.Witt.skipPop = true; history.back(); } window.removeEventListener("popstate", onPop); alive = false; clearTimeout(timer); clearTimeout(uiT); document.removeEventListener("keydown", key, true); try { if (document.fullscreenElement) document.exitFullscreen(); } catch (e) {} el.remove(); document.body.style.overflow = prevOverflow; if (opts.onClose) opts.onClose(); }
     function key(e) { e.stopPropagation(); if (e.key === "Escape") close(); else if (e.key === " ") { e.preventDefault(); toggle(); } else if (e.key === "ArrowRight") go(i + 1); else if (e.key === "ArrowLeft") go(i - 1); poke(); }
     el.querySelector(".close").onclick = function (e) { e.stopPropagation(); close(); };
     el.querySelector(".pp").onclick = function (e) { e.stopPropagation(); toggle(); };
@@ -182,6 +193,7 @@
     var sx = null; el.addEventListener("touchstart", function (e) { sx = e.touches[0].clientX; poke(); }, { passive: true });
     el.addEventListener("touchend", function (e) { if (sx == null) return; var dx = e.changedTouches[0].clientX - sx; if (Math.abs(dx) > 50) go(i + (dx < 0 ? 1 : -1)); sx = null; });
     document.addEventListener("keydown", key, true);
+    history.pushState({ witt: "film" }, ""); window.addEventListener("popstate", onPop);
     if (opts.fullscreen !== false && el.requestFullscreen && !small) { el.requestFullscreen().catch(function () {}); }
     poke(); preload(0); go(opts.start || 0);
     return { close: close };
@@ -252,21 +264,23 @@
       if (!cfg.immich || !cfg.api) throw new Error("no library configured");
       LIB.base = cfg.immich.base.replace(/\/$/, ""); LIB.keys = cfg.immich.keys;
       var cached = null;
-      try { cached = JSON.parse(sessionStorage.getItem("witt-lib-v1") || "null"); } catch (e) {}
+      try { cached = JSON.parse(sessionStorage.getItem("witt-lib-v2") || "null"); } catch (e) {}
       if (cached && Date.now() - cached.got < 10 * 60 * 1000) return cached.data;
-      return fetch(cfg.api + "?action=library").then(function (r) { return r.json(); }).then(function (data) {
+      var ctl = "AbortController" in window ? new AbortController() : null, tm = setTimeout(function () { if (ctl) ctl.abort(); }, 9000);
+      return fetch(cfg.api + "?action=library", ctl ? { signal: ctl.signal } : {}).then(function (r) { clearTimeout(tm); return r.json(); }).then(function (data) {
         if (!data || !data.ok) throw new Error("library unavailable");
-        try { sessionStorage.setItem("witt-lib-v1", JSON.stringify({ got: Date.now(), data: data })); } catch (e) {}
+        try { sessionStorage.setItem("witt-lib-v2", JSON.stringify({ got: Date.now(), data: data })); } catch (e) {}
         return data;
       });
     }).then(function (data) {
       var items = [], seen = {};
       data.shares.forEach(function (sh) {
         sh.a.forEach(function (a) {
-          if (seen[a[0]]) return; seen[a[0]] = 1;
+          if (seen[a[0]]) { seen[a[0]].in.push(sh.s); return; }
           var ratio = a[3] || 1;
-          items.push({ id: a[0], k: sh.s, share: sh.album, date: a[1].slice(0, 10), time: a[1].slice(11, 16), video: !a[2],
-            dur: a[4] || "", w: ratio >= 1 ? 1600 : Math.round(1600 * ratio), h: ratio >= 1 ? Math.round(1600 / ratio) : 1600, focus: "50% 40%", caption: "" });
+          var it = { id: a[0], k: sh.s, in: [sh.s], share: sh.album, date: a[1].slice(0, 10), time: a[1].slice(11, 16), video: !a[2],
+            dur: a[4] || "", w: ratio >= 1 ? 1600 : Math.round(1600 * ratio), h: ratio >= 1 ? Math.round(1600 / ratio) : 1600, focus: "50% 40%", caption: "" };
+          seen[a[0]] = it; items.push(it);
         });
       });
       items.sort(function (x, y) { return (x.date + x.time) < (y.date + y.time) ? -1 : 1; });

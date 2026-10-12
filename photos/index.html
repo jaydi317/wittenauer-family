@@ -70,6 +70,7 @@
 footer{padding:60px var(--pad) max(48px,env(safe-area-inset-bottom));display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;color:var(--mute);font-size:14px}
 
 .lb .stage video{max-width:100%;max-height:100%;background:#000}
+.lb .note{position:absolute;left:20px;right:20px;top:42%;text-align:center;color:var(--ink2);font-size:17px}
 .tile .vid{position:absolute;right:10px;bottom:10px;display:inline-flex;align-items:center;gap:6px;background:rgba(0,0,0,.65);color:#fff;font-size:13px;font-weight:700;padding:5px 10px;border-radius:14px}
 .tile .vid svg{width:12px;height:12px}
 .grid button{position:relative}
@@ -87,9 +88,12 @@ footer{padding:60px var(--pad) max(48px,env(safe-area-inset-bottom));display:fle
 .ovacts{display:flex;gap:10px;flex-wrap:wrap;padding:16px var(--pad) 0}
 .ovacts .btn{min-height:50px;padding:0 20px;font-size:16px}
 .top nav a.home svg{margin-right:4px}
-.grid{columns:4 240px;column-gap:12px;padding:18px var(--pad) 60px}
-.grid button{display:block;width:100%;margin:0 0 12px;break-inside:avoid;border:0;padding:0;border-radius:10px;overflow:hidden;cursor:pointer}
-.grid img{width:100%;height:auto;opacity:0;transition:opacity .6s}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:6px;padding:18px var(--pad) 60px}
+.grid h3{grid-column:1/-1;margin:22px 0 6px;font-size:20px;font-weight:700}
+.grid h3:first-child{margin-top:0}
+.grid .more{grid-column:1/-1;height:40px}
+.grid button{display:block;width:100%;aspect-ratio:1;margin:0;border:0;padding:0;border-radius:8px;overflow:hidden;cursor:pointer}
+.grid img{width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .6s}
 .grid img.on{opacity:1}
 .zipmsg{padding:0 var(--pad);color:var(--gold);font-weight:700;min-height:0}
 
@@ -112,7 +116,7 @@ footer{padding:60px var(--pad) max(48px,env(safe-area-inset-bottom));display:fle
 .sheet{width:100%;max-width:520px;background:#17161A;border-radius:22px 22px 0 0;padding:10px 22px max(26px,env(safe-area-inset-bottom));box-shadow:0 -10px 40px rgba(0,0,0,.5);animation:up .3s cubic-bezier(.2,.8,.2,1)}
 @keyframes up{from{transform:translateY(40px);opacity:0}}
 .sheet .grab{width:40px;height:5px;border-radius:3px;background:#3A393F;margin:0 auto 16px}
-.sheet h2{margin:0 0 4px;font-size:26px}
+.sheet h2{margin:0 52px 4px 0;font-size:26px}
 .sheet .q{margin:0 0 14px;color:var(--ink2);font-size:15px}
 .devs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
 .devs button{min-height:88px;border-radius:14px;border:1px solid #34333A;background:transparent;display:grid;justify-items:center;align-content:center;gap:6px;font-weight:700;font-size:15px;cursor:pointer}
@@ -152,9 +156,9 @@ footer{padding:60px var(--pad) max(48px,env(safe-area-inset-bottom));display:fle
   .add .btn{width:100%}
   .ovacts .btn{flex:1}
   .ovh h2{white-space:normal}
-  .grid{columns:2 140px;column-gap:8px}
-  .grid button{margin-bottom:8px}
-  .lb .side{display:none}
+  .grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:4px}
+  .grid button{border-radius:6px}
+  .lb .side{width:40px;height:40px;top:auto;bottom:150px;transform:none}
   .lb .foot .acts{width:100%}
   .lb .foot .acts .btn{flex:1}
 }
@@ -239,6 +243,7 @@ footer{padding:60px var(--pad) max(48px,env(safe-area-inset-bottom));display:fle
 <!-- Photo viewer -->
 <div class="lb" id="lb" hidden role="dialog" aria-modal="true" aria-label="Photo viewer">
   <div class="stage"><img id="lbImg" alt=""><video id="lbVid" controls playsinline preload="metadata" hidden></video></div>
+  <div class="note" id="lbNote" hidden></div>
   <div class="bar">
     <span class="num" id="lbNum"></span>
     <button class="icon-btn" id="lbClose" aria-label="Close photo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
@@ -312,6 +317,7 @@ footer{padding:60px var(--pad) max(48px,env(safe-area-inset-bottom));display:fle
   function pushLayer(name, hash) { history.pushState({ witt: name }, "", hash || location.pathname + location.search); }
   function back() { history.back(); }
   window.addEventListener("popstate", function () {
+    if (Witt.skipPop) { Witt.skipPop = false; return; }  /* the film closing itself */
     if (document.querySelector(".show")) return;
     if (!$("sheetWrap").hidden) closeSheet();
     else if (!$("lb").hidden) closeViewer();
@@ -329,6 +335,10 @@ footer{padding:60px var(--pad) max(48px,env(safe-area-inset-bottom));display:fle
       (list.length > 1 ? '<button class="all" type="button">See all ' + list.length.toLocaleString() + '</button>' : '') + '</div><div class="scroller"></div>' +
       '<button class="icon-btn arrow l" aria-label="Scroll left">' + ICON.prev + '</button><button class="icon-btn arrow r" aria-label="Scroll right">' + ICON.next + '</button>';
     var sc = sec.querySelector(".scroller"), h = small ? 200 : 300;
+    /* Watch tiles relative to this row, so swiping sideways loads the next pictures early. */
+    var rowIO = "IntersectionObserver" in window ? new IntersectionObserver(function (es) {
+      es.forEach(function (e) { if (e.isIntersecting) { rowIO.unobserve(e.target); fill(e.target); } });
+    }, { root: sc, rootMargin: "0px 800px" }) : { observe: fill, unobserve: function () {} };
     shown.forEach(function (p, k) {
       var b = document.createElement("button"); b.type = "button"; b.className = "tile shim";
       b.style.width = Math.round(h * Math.min(1.6, Math.max(.6, p.w / p.h))) + "px";
@@ -338,7 +348,7 @@ footer{padding:60px var(--pad) max(48px,env(safe-area-inset-bottom));display:fle
         (p.video ? '<span class="vid">' + PLAY + (dur(p.dur) || "Video") + '</span>' : '') +
         (p.caption ? '<span class="lab">' + esc(p.caption) + '</span>' : '');
       b.onclick = function () { openViewer(shown, k); };
-      sc.appendChild(b); watch(b.querySelector("img"));
+      sc.appendChild(b); rowIO.observe(b.querySelector("img"));
     });
     var all = sec.querySelector(".all"); if (all) all.onclick = function () { openGrid(title, list); };
     sec.querySelector(".arrow.l").onclick = function () { sc.scrollBy({ left: -sc.clientWidth * .8, behavior: "smooth" }); };
@@ -377,14 +387,14 @@ footer{padding:60px var(--pad) max(48px,env(safe-area-inset-bottom));display:fle
     row("This week, in other years", "Same week, different years", Witt.thisWeekOtherYears(items, today, 7).sort(byDate), { ago: true, before: first });
     lib.shares.forEach(function (sh, s) {
       if (s === 0 || !sh.count) return; /* share 0 is the whole archive; others are upload albums like Hilton Head 2026 */
-      row(sh.album, "Added by the family · newest first", newestFirst(items.filter(function (p) { return p.k === s; })), {});
+      row(sh.album, "Added by the family · newest first", newestFirst(items.filter(function (p) { return p.in && p.in.indexOf(s) > -1; })), {});
     });
     row("The wedding", "September 18–20, 2026", items.filter(function (p) { return p.date >= "2026-09-18" && p.date <= "2026-09-20"; }), {});
     row("Christmas through the years", "Every December", items.filter(function (p) { var d = md(p); return d >= "12-20" || d === "01-01"; }), {});
     row("Easter", "Every spring", items.filter(nearEaster), {});
-    row("October trips", "Beach weeks and fall getaways", items.filter(function (p) { return md(p).slice(0, 2) === "10"; }), {});
+    row("Every October", "Beach weeks and fall trips", items.filter(function (p) { return md(p).slice(0, 2) === "10"; }), {});
     row("Videos", "Tap to play", newestFirst(items.filter(function (p) { return p.video; })), {});
-    row("Everything, newest first", "The whole family library", newestFirst(items), {});
+    row("All our photos & videos", "Newest first", newestFirst(items), {});
     $("libNote").textContent = "";
     return true;
   }
@@ -406,7 +416,7 @@ footer{padding:60px var(--pad) max(48px,env(safe-area-inset-bottom));display:fle
     });
   }
   function build() {
-    buildFavorites(); buildYears();
+    buildFavorites(); buildYears(); deepLink(true);
     $("libNote").textContent = "Opening the full family library…";
     Witt.library().then(function (lib) {
       if (!buildLibrary(lib)) throw new Error("empty");
@@ -426,11 +436,30 @@ footer{padding:60px var(--pad) max(48px,env(safe-area-inset-bottom));display:fle
     $("ovZip").hidden = lib;  /* whole-album download works for favorites; library photos save one at a time */
     $("ovZipLabel").textContent = isIOS ? "Save all to Photos" : "Download all";
     var g = $("grid"); g.innerHTML = "";
-    list.forEach(function (p, k) {
-      var b = document.createElement("button"); b.type = "button"; b.className = "shim"; b.setAttribute("aria-label", (p.video ? "Video, " : "") + label(p));
-      b.innerHTML = '<img alt="" data-u="' + reg(p) + '" data-size="t" width="' + p.w + '" height="' + p.h + '">' + (p.video ? '<span class="vid">' + PLAY + '</span>' : '');
-      b.onclick = function () { openViewer(list, k); }; g.appendChild(b); watch(b.querySelector("img"));
-    });
+    /* Draw 120 at a time with month headings, so even 1,132 photos stay quick and in order. */
+    var MON = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+    var multiMonth = list.length > 24 && list.some(function (p) { return p.date && list[0].date && p.date.slice(0, 7) !== list[0].date.slice(0, 7); });
+    var drawn = 0, lastMonth = null, gen = (openGrid.gen = (openGrid.gen || 0) + 1), sentinel = null, more = null;
+    function draw() {
+      if (gen !== openGrid.gen) return;
+      var end = Math.min(list.length, drawn + 120);
+      for (var k = drawn; k < end; k++) (function (p, k) {
+        var m = p.date ? p.date.slice(0, 7) : "";
+        if (multiMonth && m && m !== lastMonth) { var h = document.createElement("h3"); h.textContent = MON[+m.slice(5) - 1] + " " + m.slice(0, 4); g.appendChild(h); lastMonth = m; }
+        var b = document.createElement("button"); b.type = "button"; b.className = "shim"; b.setAttribute("aria-label", (p.video ? "Video, " : "") + label(p));
+        b.innerHTML = '<img alt="" data-u="' + reg(p) + '" data-size="t">' + (p.video ? '<span class="vid">' + PLAY + '</span>' : '');
+        b.onclick = function () { openViewer(list, k); }; g.appendChild(b); watch(b.querySelector("img"));
+      })(list[k], k);
+      drawn = end;
+      if (sentinel) sentinel.remove();
+      if (drawn < list.length) {
+        sentinel = document.createElement("div"); sentinel.className = "more"; g.appendChild(sentinel);
+        if (more) more.disconnect();
+        more = new IntersectionObserver(function (es) { if (es[0].isIntersecting) { more.disconnect(); draw(); } }, { root: $("ov"), rootMargin: "1200px" });
+        more.observe(sentinel);
+      }
+    }
+    draw();
     $("ov").hidden = false; $("ov").scrollTop = 0; document.body.style.overflow = "hidden"; $("ovBack").focus();
     pushLayer("grid");
   }
@@ -454,17 +483,25 @@ footer{padding:60px var(--pad) max(48px,env(safe-area-inset-bottom));display:fle
   }
   function show(k) {
     vi = (k + vList.length) % vList.length; var p = vList[vi], img = $("lbImg"), vid = $("lbVid");
-    vid.pause(); vid.removeAttribute("src"); vid.hidden = true; img.hidden = false;
+    vid.pause(); vid.removeAttribute("src"); vid.load(); vid.hidden = true; img.hidden = false; $("lbNote").hidden = true;
     img.classList.add("dim"); img.dataset.full = "";
     Witt.src(p, "t").then(function (u) { if (vList[vi] === p && !img.dataset.full) img.src = u; });
     if (p.video) {
-      Witt.src(p, "m").then(function (poster) { if (vList[vi] !== p) return; vid.poster = poster; vid.src = Witt.libUrl(p, "video"); vid.hidden = false; img.hidden = true; img.classList.remove("dim"); });
+      Witt.src(p, "m").then(function (poster) {
+        if (vList[vi] !== p) return; vid.poster = poster; vid.src = Witt.libUrl(p, "video"); vid.hidden = false; img.hidden = true; img.classList.remove("dim");
+        vid.onerror = function () { if (vList[vi] !== p) return; $("lbNote").textContent = "This video won't play on this device. Tap Save to open it full size."; $("lbNote").hidden = false; };
+      });
     } else {
-      Witt.src(p, small ? "m" : "f").then(function (u) { if (vList[vi] !== p) return; img.src = u; img.dataset.full = "1"; img.alt = label(p); img.classList.remove("dim"); });
+      Witt.src(p, small ? "m" : "f").then(function (u) {
+        if (vList[vi] !== p) return; img.dataset.full = "1"; img.alt = label(p);
+        img.onload = function () { img.classList.remove("dim"); };
+        img.onerror = function () { if (vList[vi] !== p) return; img.classList.remove("dim"); $("lbNote").textContent = "This one didn't load. Check your connection and try again."; $("lbNote").hidden = false; };
+        img.src = u;
+      });
     }
     $("lbNum").textContent = (vi + 1).toLocaleString() + " of " + vList.length.toLocaleString();
     $("lbYear").textContent = p.date ? Witt.prettyDate(p.date) : "";
-    $("lbCap").textContent = p.caption || (p.video ? "Video" + (dur(p.dur) ? " · " + dur(p.dur) : "") : "");
+    $("lbCap").textContent = p.caption || (p.video ? "Video" + (dur(p.dur) ? " · " + dur(p.dur) : "") + " · plays best on Wi-Fi" : "");
     $("lbPlay").hidden = !!p.video;
     var n = vList[(vi + 1) % vList.length]; if (!n.video) Witt.src(n, small ? "m" : "f").then(function (u) { if (Witt.isLib(n)) { var im = new Image(); im.src = u; } });
     history.replaceState({ witt: "viewer" }, "", "#p=" + p.id);
@@ -478,7 +515,7 @@ footer{padding:60px var(--pad) max(48px,env(safe-area-inset-bottom));display:fle
   var sx = null, sy = null;
   $("lb").addEventListener("touchstart", function (e) { sx = e.touches[0].clientX; sy = e.touches[0].clientY; }, { passive: true });
   $("lb").addEventListener("touchend", function (e) {
-    if (sx == null || e.target.closest("button,video")) { sx = null; return; }
+    if (sx == null || e.target.closest("button") || (e.target.closest("video") && sy > innerHeight * .8)) { sx = null; return; }
     var dx = e.changedTouches[0].clientX - sx, dy = e.changedTouches[0].clientY - sy;
     if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy)) show(vi + (dx < 0 ? 1 : -1));
     else if (dy > 90 && Math.abs(dy) > Math.abs(dx)) back();
@@ -583,10 +620,13 @@ footer{padding:60px var(--pad) max(48px,env(safe-area-inset-bottom));display:fle
   $("filmBtn").onclick = function () { Witt.playFilm(Witt.familyFilm(ALL, ALL.length > 120 ? 14 : 0), { label: "The Witt film" }); };
 
   var linked = false;
-  function deepLink() {
-    if (linked) return; linked = true;
-    var m = location.hash.match(/p=([A-Za-z0-9-]+)/); if (!m) return;
-    var p = ALL.filter(function (x) { return x.id === m[1]; })[0] || favById[m[1]]; if (!p) return;
+  function deepLink(favOnly) {
+    if (linked) return;
+    var m = location.hash.match(/p=([A-Za-z0-9-]+)/); if (!m) { linked = true; return; }
+    if (favOnly && !favById[m[1]]) return;
+    linked = true;
+    var p = ALL.filter(function (x) { return x.id === m[1]; })[0] || favById[m[1]];
+    if (!p) { history.replaceState(null, "", location.pathname + location.search); return; }
     var list = Witt.isLib(p) ? ALL.filter(function (x) { return x.date && x.date.slice(0, 4) === p.date.slice(0, 4); }) : FAV.filter(function (x) { return x.album === p.album; }).sort(byDate);
     history.replaceState(null, "", location.pathname + location.search);
     openViewer(list, Math.max(0, list.indexOf(p)));

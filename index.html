@@ -298,8 +298,10 @@ footer button{background:none;border:0;color:var(--mute);text-decoration:underli
   /* This week, in other years (falls back to favorites when nothing matches). */
   function week(pool, thin) {
     var t = Witt.todayNY(), list = Witt.thisWeekOtherYears(pool || P, t, 10), box = document.getElementById("cards");
-    if (thin) { /* one per year so the three cards feel different */
-      var seen = {}; list = list.filter(function (p) { var y = p.date.slice(0, 4); if (seen[y]) return false; seen[y] = 1; return !p.video; });
+    if (thin) { /* one photo per year so the three cards feel different */
+      var seen = {}; list = list.filter(function (p) { return !p.video; }).filter(function (p) { var y = p.date.slice(0, 4); if (seen[y]) return false; seen[y] = 1; return true; });
+      document.getElementById("weekEyebrow").textContent = "This week, in other years";
+      document.getElementById("weekTitle").textContent = "Same week. Different years.";
     }
     list = list.slice(0, 3); box.innerHTML = "";
     if (!list.length) {

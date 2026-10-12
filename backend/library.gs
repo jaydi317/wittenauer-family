@@ -13,7 +13,7 @@
 */
 function library() {
   const cache = CacheService.getScriptCache();
-  const hit = cacheGetBig_(cache, 'witt_library_v1');
+  const hit = cacheGetBig_(cache, 'witt_library_v2');
   if (hit) return hit;
   const props = PropertiesService.getScriptProperties();
   const base = (props.getProperty('IMMICH_URL') || 'https://photos.wittenauer.family').replace(/\/$/, '');
@@ -30,13 +30,14 @@ function library() {
       const reqs = buckets.map(function (b) { return { url: base + '/api/timeline/bucket?' + q + '&timeBucket=' + encodeURIComponent(b.timeBucket), muteHttpExceptions: true }; });
       for (let i = 0; i < reqs.length; i += 20) {
         UrlFetchApp.fetchAll(reqs.slice(i, i + 20)).forEach(function (r) {
-          let c; try { c = JSON.parse(r.getContentText()); } catch (e) { return; }
+          if (r.getResponseCode() !== 200) { share.error = 'partial'; return; }
+          let c; try { c = JSON.parse(r.getContentText()); } catch (e) { share.error = 'partial'; return; }
           if (!c || !c.id) return;
           for (let k = 0; k < c.id.length; k++) {
             if (c.isTrashed && c.isTrashed[k]) continue;
             if (c.visibility && c.visibility[k] && c.visibility[k] !== 'timeline') continue;
-            // Local date/time the photo was taken: fileCreatedAt (UTC) shifted by localOffsetHours.
-            const t = new Date(new Date(c.fileCreatedAt[k]).getTime() + ((c.localOffsetHours && c.localOffsetHours[k]) || 0) * 3600000).toISOString().slice(0, 16);
+            // Local date/time the photo was taken: fileCreatedAt is UTC but arrives without a 'Z', so add it, then shift by localOffsetHours.
+            const t = new Date(new Date(String(c.fileCreatedAt[k]).replace(/Z?$/, 'Z')).getTime() + ((c.localOffsetHours && c.localOffsetHours[k]) || 0) * 3600000).toISOString().slice(0, 16);
             const ratio = Math.round(((c.ratio && c.ratio[k]) || 1) * 1000) / 1000;
             const img = c.isImage ? (c.isImage[k] ? 1 : 0) : 1;
             share.a.push(img ? [c.id[k], t, 1, ratio] : [c.id[k], t, 0, ratio, String((c.duration && c.duration[k]) || '')]);
@@ -48,7 +49,9 @@ function library() {
     } catch (err) { share.error = 'unavailable'; }
     out.shares.push(share);
   });
-  cachePutBig_(cache, 'witt_library_v1', out, 600);
+  /* Never cache (or claim success for) a broken read. */
+  if (out.shares.some(function (s) { return s.error; }) || !out.shares.length || !out.shares[0].count) { out.ok = false; return out; }
+  cachePutBig_(cache, 'witt_library_v2', out, 600);
   return out;
 }
 /* CacheService values are capped at 100KB, so big lists are split into chunks. */
