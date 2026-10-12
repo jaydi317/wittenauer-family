@@ -143,7 +143,8 @@
     var titleEl = el.querySelector(".title"), cap = el.querySelector(".cap"), kb = 0, alive = true;
     var reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
     function poke() { el.classList.add("ui"); clearTimeout(uiT); uiT = setTimeout(function () { el.classList.remove("ui"); }, 2600); }
-    function preload(k) { var it = items[k]; if (it && it.id) Vault.url(it.id, size); }
+    items = items.filter(function (it) { return it.title || !it.video; });
+    function preload(k) { var it = items[k]; if (it && it.id) src(it, size); }
     function dur(it) { return it.title ? 2600 : 5600; }
     function runBar(ms) { bar.style.transition = "none"; bar.style.width = ((i) / items.length * 100) + "%"; void bar.offsetWidth; bar.style.transition = "width " + ms + "ms linear"; bar.style.width = ((i + 1) / items.length * 100) + "%"; }
     function go(n) {
@@ -155,7 +156,7 @@
         var yr = titleEl.querySelector(".yr"); yr.textContent = it.title; yr.classList.toggle("long", String(it.title).length > 4); titleEl.querySelector(".sub").textContent = it.sub || "";
         titleEl.classList.add("on"); layers[cur].classList.remove("on"); cap.style.opacity = 0; schedule(it); return;
       }
-      Vault.url(it.id, size).then(function (u) {
+      src(it, size).then(function (u) {
         if (!alive || items[i] !== it) return;
         var nxt = 1 - cur, L = layers[nxt]; var portrait = it.h > it.w;
         L.className = "layer" + (portrait || small ? "" : " cover");
@@ -165,7 +166,7 @@
         titleEl.classList.remove("on");
         requestAnimationFrame(function () { L.classList.add("on"); layers[cur].classList.remove("on"); cur = nxt; });
         el.querySelector(".cap .y").textContent = it.date ? it.date.slice(0, 4) : "";
-        el.querySelector(".cap .c").textContent = it.caption || ""; cap.style.opacity = 1;
+        el.querySelector(".cap .c").textContent = it.caption || prettyDate(it.date); cap.style.opacity = 1;
         schedule(it);
       }).catch(function () { schedule(it, 10); });
     }
@@ -186,8 +187,15 @@
     return { close: close };
   }
   /* A film of the whole family, in order, with a title card for each year. */
-  function familyFilm(photos) {
-    var sorted = photos.filter(function (p) { return p.date; }).sort(function (a, b) { return a.date < b.date ? -1 : 1; });
+  function familyFilm(photos, perYear) {
+    var sorted = photos.filter(function (p) { return p.date && !p.video; }).sort(function (a, b) { return a.date < b.date ? -1 : 1; });
+    if (perYear) { /* keep the film to a sitting: an even sample from each year */
+      var by = {}; sorted.forEach(function (p) { (by[p.date.slice(0, 4)] = by[p.date.slice(0, 4)] || []).push(p); });
+      sorted = [].concat.apply([], Object.keys(by).sort().map(function (y) {
+        var l = by[y]; if (l.length <= perYear) return l;
+        var out = []; for (var i = 0; i < perYear; i++) out.push(l[Math.floor(i * l.length / perYear)]); return out;
+      }));
+    }
     var items = [{ title: "THE WITTS", sub: "Every Witt, every year" }], last = null;
     sorted.forEach(function (p) { var y = p.date.slice(0, 4); if (y !== last) { items.push({ title: y, sub: "The Witts in " + y }); last = y; } items.push(p); });
     return items;
@@ -223,6 +231,51 @@
     });
   }
 
+
+  /* ---------- The full family library (Immich at photos.wittenauer.family) ----------
+     The list comes through the family's Google relay (ids and dates only). Pictures load
+     straight from Immich using a share key that lives inside the locked settings. */
+  var LIB = { base: "", keys: [] };
+  function isLib(p) { return p && p.k != null; }
+  function libUrl(p, kind) {
+    var key = encodeURIComponent(LIB.keys[p.k] || "");
+    if (kind === "orig") return LIB.base + "/api/assets/" + p.id + "/original?key=" + key;
+    if (kind === "video") return LIB.base + "/api/assets/" + p.id + "/video/playback?key=" + key;
+    return LIB.base + "/api/assets/" + p.id + "/thumbnail?size=" + (kind === "t" ? "thumbnail" : "preview") + "&key=" + key;
+  }
+  /* One way to get a picture's address, whether it is a locked favorite or from the library. */
+  function src(p, size) { return isLib(p) ? Promise.resolve(libUrl(p, size)) : Vault.url(p.id, size); }
+  var libPromise = null;
+  function library() {
+    if (libPromise) return libPromise;
+    libPromise = Vault.config().then(function (cfg) {
+      if (!cfg.immich || !cfg.api) throw new Error("no library configured");
+      LIB.base = cfg.immich.base.replace(/\/$/, ""); LIB.keys = cfg.immich.keys;
+      var cached = null;
+      try { cached = JSON.parse(sessionStorage.getItem("witt-lib-v1") || "null"); } catch (e) {}
+      if (cached && Date.now() - cached.got < 10 * 60 * 1000) return cached.data;
+      return fetch(cfg.api + "?action=library").then(function (r) { return r.json(); }).then(function (data) {
+        if (!data || !data.ok) throw new Error("library unavailable");
+        try { sessionStorage.setItem("witt-lib-v1", JSON.stringify({ got: Date.now(), data: data })); } catch (e) {}
+        return data;
+      });
+    }).then(function (data) {
+      var items = [], seen = {};
+      data.shares.forEach(function (sh) {
+        sh.a.forEach(function (a) {
+          if (seen[a[0]]) return; seen[a[0]] = 1;
+          var ratio = a[3] || 1;
+          items.push({ id: a[0], k: sh.s, share: sh.album, date: a[1].slice(0, 10), time: a[1].slice(11, 16), video: !a[2],
+            dur: a[4] || "", w: ratio >= 1 ? 1600 : Math.round(1600 * ratio), h: ratio >= 1 ? Math.round(1600 / ratio) : 1600, focus: "50% 40%", caption: "" });
+        });
+      });
+      items.sort(function (x, y) { return (x.date + x.time) < (y.date + y.time) ? -1 : 1; });
+      return { items: items, shares: data.shares };
+    });
+    libPromise.catch(function () { libPromise = null; });
+    return libPromise;
+  }
+
   window.Vault = Vault;
-  window.Witt = { addPhotos: addPhotos, uploadTarget: uploadTarget, wireGate: wireGate, todayNY: todayNY, dayDiff: dayDiff, prettyDate: prettyDate, thisWeekOtherYears: thisWeekOtherYears, playFilm: playFilm, familyFilm: familyFilm, ICON: ICON };
+  window.Witt = { library: library, src: src, libUrl: libUrl, isLib: isLib, addPhotos: addPhotos, uploadTarget: uploadTarget, wireGate: wireGate, todayNY: todayNY, dayDiff: dayDiff, prettyDate: prettyDate, thisWeekOtherYears: thisWeekOtherYears, playFilm: playFilm, familyFilm: familyFilm, ICON: ICON };
 })();
