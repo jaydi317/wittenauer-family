@@ -48,7 +48,7 @@
       return true;
     },
     config() {
-      if (!cache.cfg) cache.cfg = fetch(ROOT + "media/cfg.bin?v=5").then(function (r) { return r.arrayBuffer(); })
+      if (!cache.cfg) cache.cfg = fetch(ROOT + "media/cfg.bin?v=6").then(function (r) { return r.arrayBuffer(); })
         .then(function (b) { return decrypt(key, b); }).then(function (p) { return JSON.parse(new TextDecoder().decode(p)); });
       return cache.cfg;
     },
@@ -78,6 +78,11 @@
   /* ---------- The family-word door ---------- */
   function wireGate(onOpen) {
     var gate = document.getElementById("gate");
+    /* The lock only works on the secure (https) site. Plain http: jump to https. */
+    if (location.protocol === "http:" && !/^(localhost|127\.)/.test(location.hostname)) {
+      location.replace("https://" + location.host + location.pathname + location.search + location.hash); return;
+    }
+    var insecure = !(window.crypto && window.crypto.subtle);
     var form = gate.querySelector("form");
     var input = gate.querySelector("#word");
     var err = gate.querySelector(".err");
@@ -101,6 +106,7 @@
       try { ok = await Vault.unlock(input.value, gate.querySelector("#remember").checked); } catch (x) { ok = false; }
       btn.disabled = false; btn.textContent = "Come in";
       if (ok) open();
+      else if (insecure) { err.textContent = "This browser can't open the photos here. Open https://wittenauer.family in Safari or Chrome."; }
       else { err.textContent = "That's not quite it. Try again?"; gate.classList.remove("shake"); void gate.offsetWidth; gate.classList.add("shake"); input.select(); }
     });
   }
