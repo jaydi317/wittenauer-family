@@ -14,7 +14,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&display=swap">
-<link rel="stylesheet" href="assets/witt.css">
+<link rel="stylesheet" href="assets/witt.css?v=3">
 <style>
 /* ---------- Hero: the family film ---------- */
 .hero{position:relative;height:74vh;height:74svh;min-height:560px;overflow:hidden;background:#000}
@@ -84,6 +84,18 @@
 .strip i img.on{opacity:1}
 
 /* ---------- Sections ---------- */
+.facerow{display:flex;gap:22px;overflow-x:auto;scrollbar-width:none;padding:6px 4px 10px;-webkit-overflow-scrolling:touch}
+.facerow::-webkit-scrollbar{display:none}
+.hface{flex:none;width:112px;text-align:center;color:var(--ink)}
+.hface i{display:block;width:112px;height:112px;border-radius:50%;overflow:hidden;position:relative;background:#1C1B20;box-shadow:0 0 0 2px rgba(255,255,255,.08);transition:box-shadow .25s ease, transform .25s ease}
+.hface i b{position:absolute;inset:0;display:grid;place-items:center;font-size:40px;font-stretch:125%;font-weight:800;color:#5A5760}
+.hface i img{position:relative;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .6s ease}
+.hface i img.on{opacity:1}
+@media (hover:hover){.hface:hover i{box-shadow:0 0 0 3px var(--gold);transform:translateY(-3px)}}
+.hface:focus-visible i{box-shadow:0 0 0 3px var(--gold);transform:translateY(-3px)}
+.hface:focus-visible{outline:none}
+.hface .nm{display:block;margin-top:10px;font-weight:700;font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+@media (max-width:820px){.facerow{gap:14px;margin:0 -20px;padding:6px 20px 10px}.hface{width:86px}.hface i{width:86px;height:86px}.hface i b{font-size:32px}.hface .nm{font-size:15px}}
 .sec{max-width:1440px;margin:0 auto;padding:72px clamp(20px,4.4vw,64px) 0}
 .sec h2.t{margin:8px 0 22px;font-size:clamp(28px,3.4vw,48px)}
 .cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}
@@ -140,8 +152,8 @@ footer button{background:none;border:0;color:var(--mute);text-decoration:underli
   .film .btn{width:100%}
 }
 </style>
-<script src="assets/photos.js"></script>
-<script src="assets/vault.js"></script>
+<script src="assets/photos.js?v=3"></script>
+<script src="assets/vault.js?v=3"></script>
 </head>
 <body>
 
@@ -212,6 +224,12 @@ footer button{background:none;border:0;color:var(--mute);text-decoration:underli
         <span class="go">Open photos <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
       </div>
     </a>
+  </section>
+
+  <section class="sec" id="peopleSec" hidden>
+    <div class="eyebrow">Find yourself</div>
+    <h2 class="t xd">Tap a face. See every photo.</h2>
+    <div class="facerow" id="facerow"></div>
   </section>
 
   <section class="sec" id="weekSec">
@@ -353,8 +371,31 @@ footer button{background:none;border:0;color:var(--mute);text-decoration:underli
       var v = items.filter(function (p) { return p.video; }).length, ys = items.map(function (p) { return p.date.slice(0, 4); }).sort();
       document.getElementById("photoBadge").textContent = (items.length - v).toLocaleString() + " photos · " + v + " videos · since " + ys[0];
       if (Witt.thisWeekOtherYears(items, Witt.todayNY(), 10).length) week(items, true);
+      try { faceRow(); } catch (e) {}
     }).catch(function () {});
     nextSlide().then(function () { doorArt(); lazyAll(); });
+  }
+  /* A circle for every named Witt; each one opens their page in Photos. */
+  function faceRow() {
+    var facesP = Witt.faces(); facesP.catch(function () {});
+    Witt.people().then(function (list) {
+      if (!list.length) return;
+      var row = document.getElementById("facerow"); row.innerHTML = "";
+      list.forEach(function (person) {
+        var a = document.createElement("a"); a.className = "hface"; a.href = "photos/#person=" + encodeURIComponent(person.id); a.dataset.pid = person.id;
+        a.setAttribute("aria-label", person.name + ", " + person.items.length + " photos and videos");
+        var i = document.createElement("i"), b = document.createElement("b"), nm = document.createElement("span");
+        b.textContent = person.first.charAt(0).toUpperCase(); b.setAttribute("aria-hidden", "true"); i.appendChild(b);
+        nm.className = "nm"; nm.textContent = person.first; a.appendChild(i); a.appendChild(nm); row.appendChild(a);
+      });
+      document.getElementById("peopleSec").hidden = false;
+      facesP.then(function (f) {
+        row.querySelectorAll(".hface").forEach(function (a) {
+          var u = f[a.dataset.pid]; if (!u) return;
+          var img = new Image(); img.alt = ""; img.onload = function () { img.classList.add("on"); }; img.src = u; a.querySelector("i").appendChild(img);
+        });
+      }).catch(function () {});
+    }).catch(function () {});
   }
   var LIBITEMS = null;
   var film = function () { Witt.playFilm(LIBITEMS ? Witt.familyFilm(LIBITEMS, 14) : Witt.familyFilm(P), { label: "The Witt film" }); };

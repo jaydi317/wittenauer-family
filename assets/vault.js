@@ -52,7 +52,10 @@
         .then(function (b) { return decrypt(key, b); }).then(function (p) { return JSON.parse(new TextDecoder().decode(p)); });
       return cache.cfg;
     },
-    forget() { store(false, null); key = null; Vault.ready = false; },
+    forget() {
+      store(false, null); key = null; Vault.ready = false;
+      try { ["witt-lib-v2", "witt-people-v2", "witt-faces-v2"].forEach(function (k) { sessionStorage.removeItem(k); }); } catch (e) {}
+    },
     blob(id, size) {
       var ck = size + "/" + id;
       if (!cache[ck]) {
@@ -199,7 +202,8 @@
     return { close: close };
   }
   /* A film of the whole family, in order, with a title card for each year. */
-  function familyFilm(photos, perYear) {
+  function familyFilm(photos, perYear, opts) {
+    opts = opts || {};
     var sorted = photos.filter(function (p) { return p.date && !p.video; }).sort(function (a, b) { return a.date < b.date ? -1 : 1; });
     if (perYear) { /* keep the film to a sitting: an even sample from each year */
       var by = {}; sorted.forEach(function (p) { (by[p.date.slice(0, 4)] = by[p.date.slice(0, 4)] || []).push(p); });
@@ -208,8 +212,8 @@
         var out = []; for (var i = 0; i < perYear; i++) out.push(l[Math.floor(i * l.length / perYear)]); return out;
       }));
     }
-    var items = [{ title: "THE WITTS", sub: "Every Witt, every year" }], last = null;
-    sorted.forEach(function (p) { var y = p.date.slice(0, 4); if (y !== last) { items.push({ title: y, sub: "The Witts in " + y }); last = y; } items.push(p); });
+    var items = [{ title: opts.title || "THE WITTS", sub: opts.sub || "Every Witt, every year" }], last = null;
+    sorted.forEach(function (p) { var y = p.date.slice(0, 4); if (y !== last) { items.push({ title: y, sub: (opts.who || "The Witts") + " in " + y }); last = y; } items.push(p); });
     return items;
   }
 
@@ -290,6 +294,80 @@
     return libPromise;
   }
 
+  /* ---------- People: the faces Jimmy named in the photo library ----------
+     The relay only answers if we prove we are past the family word (a fingerprint of the archive key). */
+  function sha256hex(str) {
+    return crypto.subtle.digest("SHA-256", new TextEncoder().encode(str)).then(function (b) {
+      return Array.prototype.map.call(new Uint8Array(b), function (x) { return ("0" + x.toString(16)).slice(-2); }).join("");
+    });
+  }
+  function relayGet(url, store, maxAge, ms) {
+    var cached = null;
+    try { cached = JSON.parse(sessionStorage.getItem(store) || "null"); } catch (e) {}
+    if (cached && Date.now() - cached.got < maxAge) return Promise.resolve(cached.data);
+    var ctl = "AbortController" in window ? new AbortController() : null, tm = setTimeout(function () { if (ctl) ctl.abort(); }, ms);
+    return fetch(url, ctl ? { signal: ctl.signal } : {}).then(function (r) { clearTimeout(tm); return r.json(); }).then(function (data) {
+      if (!data || !data.ok) throw new Error((data && data.error) || "unavailable");
+      try { sessionStorage.setItem(store, JSON.stringify({ got: Date.now(), data: data })); } catch (e) {}
+      return data;
+    });
+  }
+  function relayUrl(cfg, part) {
+    return sha256hex(cfg.immich.keys[0]).then(function (t) { return cfg.api + "?action=people&t=" + t + (part ? "&part=" + part : ""); });
+  }
+  var peoplePromise = null, facesPromise = null;
+  function tag(id) { return String(id).replace(/-/g, "").slice(-12); }
+  function people() {
+    if (peoplePromise) return peoplePromise;
+    peoplePromise = Promise.all([Vault.config(), library()]).then(function (r) {
+      var cfg = r[0], lib = r[1], opt = cfg.people || {};
+      return relayUrl(cfg).then(function (u) { return relayGet(u, "witt-people-v2", 6 * 60 * 60 * 1000, 45000); }).then(function (data) {
+        var byTag = {}; lib.items.forEach(function (it) { byTag[tag(it.id)] = it; });
+        var low = function (s) { return String(s || "").toLowerCase().trim(); };
+        var first = function (n) { return low(n).split(/\s+/)[0]; };
+        var order = (opt.order || []).map(low), hide = (opt.hide || []).map(low), min = opt.min || 3;
+        /* Same full name twice (Immich sometimes splits a person) -> one circle with both sets of photos. */
+        var merged = {}, list = [];
+        (data.people || []).forEach(function (p) {
+          var nm = String(p.name || "").trim(); if (!nm) return;
+          if (hide.indexOf(low(nm)) > -1 || hide.indexOf(first(nm)) > -1 || hide.indexOf(String(p.id)) > -1) return;
+          var items = (p.a || []).map(function (x) { return byTag[x]; }).filter(Boolean);
+          var m = merged[low(nm)];
+          if (!m) { m = merged[low(nm)] = { id: p.id, name: nm, ids: [p.id], items: [], seen: {}, big: 0 }; list.push(m); }
+          else m.ids.push(p.id);
+          if (items.length > m.big) { m.big = items.length; m.id = p.id; }  /* the bigger group's face */
+          items.forEach(function (it) { if (!m.seen[it.id]) { m.seen[it.id] = 1; m.items.push(it); } });
+        });
+        list = list.filter(function (p) { return p.items.length >= min; });
+        /* Two people with the same first name show a last initial: "Mark W." */
+        var firsts = {}; list.forEach(function (p) { var f = first(p.name); firsts[f] = (firsts[f] || 0) + 1; });
+        list.forEach(function (p) {
+          var parts = p.name.split(/\s+/);
+          p.first = parts[0] + (firsts[first(p.name)] > 1 && parts[1] ? " " + parts[1].charAt(0).toUpperCase() + "." : "");
+          delete p.seen; delete p.big;
+        });
+        /* Family order: an exact full name wins; a first name only counts when nobody else shares it. */
+        var rank = function (p) { var i = order.indexOf(low(p.name)); if (i < 0 && firsts[first(p.name)] === 1) i = order.indexOf(first(p.name)); return i < 0 ? 999 : i; };
+        list.sort(function (a, b) { return rank(a) - rank(b) || b.items.length - a.items.length || (a.name < b.name ? -1 : 1); });
+        return list;
+      });
+    });
+    peoplePromise.catch(function () { peoplePromise = null; });
+    return peoplePromise;
+  }
+  function faces() {
+    if (facesPromise) return facesPromise;
+    facesPromise = Vault.config().then(function (cfg) {
+      return relayUrl(cfg, "faces").then(function (u) { return relayGet(u, "witt-faces-v2", 6 * 60 * 60 * 1000, 30000); });
+    }).then(function (d) {
+      var out = {}, f = d.faces || {};
+      Object.keys(f).forEach(function (k) { if (/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+\/=]+$/.test(f[k])) out[k] = f[k]; });
+      return out;
+    });
+    facesPromise.catch(function () { facesPromise = null; });
+    return facesPromise;
+  }
+
   window.Vault = Vault;
-  window.Witt = { library: library, src: src, libUrl: libUrl, isLib: isLib, addPhotos: addPhotos, uploadTarget: uploadTarget, wireGate: wireGate, todayNY: todayNY, dayDiff: dayDiff, prettyDate: prettyDate, thisWeekOtherYears: thisWeekOtherYears, playFilm: playFilm, familyFilm: familyFilm, ICON: ICON };
+  window.Witt = { library: library, people: people, faces: faces, src: src, libUrl: libUrl, isLib: isLib, addPhotos: addPhotos, uploadTarget: uploadTarget, wireGate: wireGate, todayNY: todayNY, dayDiff: dayDiff, prettyDate: prettyDate, thisWeekOtherYears: thisWeekOtherYears, playFilm: playFilm, familyFilm: familyFilm, ICON: ICON };
 })();
