@@ -325,7 +325,9 @@
         var byTag = {}; lib.items.forEach(function (it) { byTag[tag(it.id)] = it; });
         var low = function (s) { return String(s || "").toLowerCase().trim(); };
         var first = function (n) { return low(n).split(/\s+/)[0]; };
-        var order = (opt.order || []).map(low), hide = (opt.hide || []).map(low), min = opt.min || 3;
+        /* Match the family's preferred spellings to Immich's saved names for ordering only. */
+        var orderName = function (s) { return low(s).replace(/^staci(?=\s|$)/, "stacey").replace(/^kendall(?=\s|$)/, "kendal").replace(/^alexis(?=\s|$)/, "alexa"); };
+        var order = (opt.order || []).map(orderName), hide = (opt.hide || []).map(low), min = opt.min || 3;
         /* Same full name twice (Immich sometimes splits a person) -> one circle with both sets of photos. */
         var merged = {}, list = [];
         (data.people || []).forEach(function (p) {
@@ -347,7 +349,7 @@
           delete p.seen; delete p.big;
         });
         /* Family order: an exact full name wins; a first name only counts when nobody else shares it. */
-        var rank = function (p) { var i = order.indexOf(low(p.name)); if (i < 0 && firsts[first(p.name)] === 1) i = order.indexOf(first(p.name)); return i < 0 ? 999 : i; };
+        var rank = function (p) { var i = order.indexOf(orderName(p.name)); if (i < 0 && firsts[first(p.name)] === 1) i = order.indexOf(orderName(first(p.name))); return i < 0 ? 999 : i; };
         list.sort(function (a, b) { return rank(a) - rank(b) || b.items.length - a.items.length || (a.name < b.name ? -1 : 1); });
         return list;
       });
