@@ -48,7 +48,7 @@
       return true;
     },
     config() {
-      if (!cache.cfg) cache.cfg = fetch(ROOT + "media/cfg.bin").then(function (r) { return r.arrayBuffer(); })
+      if (!cache.cfg) cache.cfg = fetch(ROOT + "media/cfg.bin?v=people-v2").then(function (r) { return r.arrayBuffer(); })
         .then(function (b) { return decrypt(key, b); }).then(function (p) { return JSON.parse(new TextDecoder().decode(p)); });
       return cache.cfg;
     },
