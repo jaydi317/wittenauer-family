@@ -48,13 +48,14 @@
       return true;
     },
     config() {
-      if (!cache.cfg) cache.cfg = fetch(ROOT + "media/cfg.bin?v=people-v2").then(function (r) { return r.arrayBuffer(); })
+      if (!cache.cfg) cache.cfg = fetch(ROOT + "media/cfg.bin").then(function (r) { return r.arrayBuffer(); })
         .then(function (b) { return decrypt(key, b); }).then(function (p) { return JSON.parse(new TextDecoder().decode(p)); });
       return cache.cfg;
     },
     forget() {
       store(false, null); key = null; Vault.ready = false;
-      try { ["witt-lib-v2", "witt-people-v2", "witt-faces-v2"].forEach(function (k) { sessionStorage.removeItem(k); }); } catch (e) {}
+      try { ["witt-lib-v2", "witt-people-v2", "witt-faces-v2", "witt-uploads-v1", "witt-uploaders-v1"].forEach(function (k) { sessionStorage.removeItem(k); }); } catch (e) {}
+      try { ["witt-me", "witt-seen-upload", "witt-uploaders"].forEach(function (k) { localStorage.removeItem(k); }); } catch (e) {}
     },
     blob(id, size) {
       var ck = size + "/" + id;
@@ -225,28 +226,94 @@
     return null;
   }
   function addPhotos() {
+    var prev = document.activeElement;
+    var w = document.createElement("div"); w.className = "up-wrap";
+    w.innerHTML = '<div class="up" role="dialog" aria-modal="true" aria-labelledby="upT"><button class="icon-btn x" aria-label="Close">' + ICON.x + '</button><div class="upin"><h2 class="xd" id="upT">Add your photos &amp; videos</h2><p class="lead">One sec&hellip;</p></div></div>';
+    var box = w.querySelector(".upin"), bodyOverflow = document.body.style.overflow;
+    function close() { document.removeEventListener("keydown", key, true); w.remove(); document.body.style.overflow = bodyOverflow; if (prev && prev.focus) prev.focus(); }
+    function key(e) { if (e.key === "Escape") { e.stopPropagation(); close(); } }
+    w.querySelector(".x").onclick = close;
+    w.addEventListener("click", function (e) { if (e.target === w) close(); });
+    document.addEventListener("keydown", key, true);
+    document.body.appendChild(w); document.body.style.overflow = "hidden"; w.querySelector(".x").focus();
+    var esc = function (t) { return String(t || "").replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); };
+    var low = function (t) { return String(t || "").toLowerCase().trim(); };
+    var LIST = [], PEOPLE = [], FACES = {}, generic = null, label = firstName;
+    var SOON = "Your photos show up on the site in about 10 minutes.";
+
+    function personFor(name) {
+      var n = low(name), exact = PEOPLE.filter(function (p) { return low(p.name) === n; });
+      if (exact.length) return exact[0];
+      var byFirst = PEOPLE.filter(function (p) { return low(firstName(p.name)) === low(firstName(name)); });
+      return byFirst.length === 1 ? byFirst[0] : null;  /* only when nobody else shares the first name */
+    }
+    function faceHTML(name) { return '<i data-face="' + esc(name) + '"><b aria-hidden="true">' + esc(label(name).charAt(0).toUpperCase()) + '</b></i>'; }
+    function paintFaces() {
+      box.querySelectorAll("i[data-face]").forEach(function (i) {
+        if (i.querySelector("img")) return;
+        var p = personFor(i.getAttribute("data-face")), f = p && FACES[p.id];
+        if (f) { var img = new Image(); img.alt = ""; img.src = f; i.appendChild(img); }
+      });
+    }
+    function opened() {
+      /* When they come back from the upload page, fetch fresh lists next time. */
+      document.addEventListener("visibilitychange", function once() {
+        if (document.visibilityState !== "visible") return;
+        document.removeEventListener("visibilitychange", once);
+        try { ["witt-lib-v2", "witt-uploads-v1"].forEach(function (k) { sessionStorage.removeItem(k); }); } catch (e) {}
+      });
+    }
+    function steps(u, opts) {
+      opts = opts || {};
+      var who = u.name ? label(u.name) : "";
+      box.innerHTML = (who ? '<div class="hi">' + faceHTML(u.name).replace("<i ", '<i class="wf" ') + '<h2 class="xd" id="upT">Hi, ' + esc(who) + '!</h2></div>' : '<h2 class="xd" id="upT">Add your photos &amp; videos</h2>') +
+        '<p class="lead">' + opts.lead + '</p>' +
+        '<ol><li><b class="n">1</b><span>Tap <b>Open my upload page</b> below.</span></li>' +
+        '<li><b class="n">2</b><span>At the top, tap <b>Add photos</b> (the upload arrow), then pick your photos and videos.</span></li>' +
+        '<li><b class="n">3</b><span>Keep that page open until they finish. ' + SOON + '</span></li></ol>' +
+        '<a class="btn btn-gold go" href="' + esc(u.url) + '" target="_blank" rel="noopener">Open my upload page</a>' +
+        (who ? '<button type="button" class="notme">Not ' + esc(who) + '? Pick someone else</button>' : '') +
+        (opts.back ? '<button type="button" class="notme back">&larr; Back to faces</button>' : '');
+      paintFaces();
+      box.querySelector(".go").onclick = function () { if (u.name) me(u.name); opened(); };
+      var nm = box.querySelector(".notme:not(.back)"); if (nm) nm.onclick = function () { me(null); picker(); };
+      var bk = box.querySelector(".back"); if (bk) bk.onclick = picker;
+      box.querySelector(".go").focus();
+    }
+    var MINE = "Everything you add goes into the family library with your name on it. Full quality, videos too.";
+    function genericLead() { return "They go straight into <b>" + esc(generic.album) + "</b> at full quality, so everyone can see them."; }
+    function picker() {
+      box.innerHTML = '<h2 class="xd" id="upT">Who&rsquo;s adding?</h2><p class="lead">Tap your name. This phone will remember, and your photos will say they&rsquo;re from you.</p><div class="who" role="group" aria-label="Family members"></div>' +
+        (generic ? '<button type="button" class="notme someone">Someone else</button>' : '');
+      var grid = box.querySelector(".who");
+      LIST.forEach(function (u) {
+        var b = document.createElement("button"); b.type = "button"; b.className = "wface";
+        b.innerHTML = faceHTML(u.name) + '<span>' + esc(label(u.name)) + '</span>';
+        b.onclick = function () { steps(u, { lead: MINE }); };
+        grid.appendChild(b);
+      });
+      paintFaces();
+      var so = box.querySelector(".someone");
+      if (so) so.onclick = function () { steps({ url: generic.url }, { lead: genericLead(), back: true }); };
+      var f = grid.querySelector("button"); if (f) f.focus();
+    }
     Vault.config().then(function (cfg) {
-      var u = uploadTarget(cfg); if (!u) return;
-      var prev = document.activeElement;
-      var w = document.createElement("div"); w.className = "up-wrap";
-      w.innerHTML = '<div class="up" role="dialog" aria-modal="true" aria-labelledby="upT">' +
-        '<button class="icon-btn x" aria-label="Close">' + ICON.x + '</button>' +
-        '<h2 class="xd" id="upT">Add your photos &amp; videos</h2>' +
-        '<p class="lead">They go straight into <b>' + u.album + '</b> at full quality, so everyone can see them. Videos work too.</p>' +
-        '<ol><li><b class="n">1</b><span>Tap <b>Open the album</b> below.</span></li>' +
-        (u.pass ? '<li><b class="n">2</b><span>If it asks for a password, type<br><span class="pw">' + u.pass + '</span></span></li>' : '') +
-        '<li><b class="n">' + (u.pass ? 3 : 2) + '</b><span>At the top, tap <b>Add photos</b> (the upload arrow), then pick your photos and videos.</span></li>' +
-        '<li><b class="n">' + (u.pass ? 4 : 3) + '</b><span>Keep that page open until they finish. That\'s it.</span></li></ol>' +
-        '<a class="btn btn-gold go" href="' + u.url + '" target="_blank" rel="noopener">Open the album</a></div>';
-      function close() { document.removeEventListener("keydown", key, true); w.remove(); if (prev) prev.focus(); }
-      function key(e) { if (e.key === "Escape") { e.stopPropagation(); close(); } }
-      w.querySelector(".x").onclick = close;
-      w.addEventListener("click", function (e) { if (e.target === w) close(); });
-      document.addEventListener("keydown", key, true);
-      document.body.appendChild(w); w.querySelector(".go").focus();
+      generic = uploadTarget(cfg);
+      /* Faces fill in when ready; the picker never waits for them. */
+      Promise.all([people(), faces()]).then(function (r) { PEOPLE = r[0]; FACES = r[1]; paintFaces(); }).catch(function () {});
+      return uploaders();
+    }).then(function (list) {
+      LIST = list; if (!LIST.length) throw new Error("none");
+      label = labeler(LIST.map(function (u) { return u.name; }));
+      var mine = me(), u = mine && LIST.filter(function (x) { return low(x.name) === low(mine); })[0];
+      if (u) steps(u, { lead: MINE }); else picker();
+    }).catch(function () {
+      /* No per-person links (or the relay is down): the shared album, like before. */
+      if (!document.body.contains(w)) return;
+      if (generic) steps({ url: generic.url }, { lead: genericLead() + (me() ? " (Your name won&rsquo;t be on these this time.)" : "") });
+      else box.innerHTML = '<h2 class="xd" id="upT">Add your photos &amp; videos</h2><p class="lead">Adding photos isn&rsquo;t open right now. Please try again later.</p>';
     });
   }
-
 
   /* ---------- The full family library (Immich at photos.wittenauer.family) ----------
      The list comes through the family's Google relay (ids and dates only). Pictures load
@@ -315,6 +382,70 @@
   function relayUrl(cfg, part) {
     return sha256hex(cfg.immich.keys[0]).then(function (t) { return cfg.api + "?action=people&t=" + t + (part ? "&part=" + part : ""); });
   }
+  /* ---------- Who added what (each person uploads through their own album link) ---------- */
+  var uploadsPromise = null;
+  function firstName(n) { return String(n || "").trim().split(/\s+/)[0]; }
+  /* Show first names, unless two people share one: then the full name. */
+  function labeler(names) {
+    var c = {}; names.forEach(function (n) { var f = firstName(n).toLowerCase(); c[f] = (c[f] || {}); c[f][String(n).toLowerCase()] = 1; });
+    return function (n) { return Object.keys(c[firstName(n).toLowerCase()] || {}).length > 1 ? String(n).trim() : firstName(n); };
+  }
+  function uploads() {
+    if (uploadsPromise) return uploadsPromise;
+    uploadsPromise = Promise.all([Vault.config(), library()]).then(function (r) {
+      var cfg = r[0], lib = r[1];
+      return relayUrl(cfg, "uploads").then(function (u) { return relayGet(u, "witt-uploads-v1", 2 * 60 * 1000, 20000); }).then(function (d) {
+        var byTag = {}; lib.items.forEach(function (it) { byTag[tag(it.id)] = it; });
+        var up = (d.up || []).filter(function (x) { return x && x[0] && x[1] && !isNaN(Date.parse(x[2])); });
+        var lab = labeler(up.map(function (x) { return x[1]; }));
+        var out = [];
+        up.forEach(function (x) { var it = byTag[x[0]]; if (it && !it.by) { it.by = lab(x[1]); it.at = x[2]; out.push(it); } });
+        /* Everything uploaded, including photos the cached library list hasn't caught up with yet (used for the "new" count). */
+        out.raw = up.map(function (x) { return { by: lab(x[1]), full: String(x[1]), at: x[2] }; });
+        return out;  /* newest upload first */
+      });
+    });
+    uploadsPromise.catch(function () { uploadsPromise = null; });
+    return uploadsPromise;
+  }
+  function uploaders() {
+    return Vault.config().then(function (cfg) {
+      return relayUrl(cfg, "uploaders").then(function (u) { return relayGet(u, "witt-uploaders-v1", 6 * 60 * 60 * 1000, 8000); });
+    }).then(function (d) {
+      var list = (d.people || []).filter(function (x) { return x && x.name && /^https:\/\//.test(String(x.url)); });
+      try { localStorage.setItem("witt-uploaders", JSON.stringify(list)); } catch (e) {}
+      return list;
+    }, function (err) {
+      /* Relay slow or down: use the list this phone saw last time, if any. */
+      var keep = null; try { keep = JSON.parse(localStorage.getItem("witt-uploaders") || "null"); } catch (e) {}
+      if (keep && keep.length) return keep;
+      throw err;
+    });
+  }
+  function me(name) {
+    try { if (name === undefined) return localStorage.getItem("witt-me") || ""; if (name) localStorage.setItem("witt-me", name); else localStorage.removeItem("witt-me"); } catch (e) {}
+    return name || "";
+  }
+  /* "New since your last visit" = uploads newer than the newest one this phone has already been shown on the Photos page.
+     Your own uploads don't count. */
+  function seenMark() { try { return localStorage.getItem("witt-seen-upload") || ""; } catch (e) { return ""; } }
+  function markSeen(list) {
+    var top = list && list.raw && list.raw[0] && list.raw[0].at; if (!top) return;
+    try { if (top > (localStorage.getItem("witt-seen-upload") || "")) localStorage.setItem("witt-seen-upload", top); } catch (e) {}
+  }
+  function newCount(list, mark) {
+    if (!mark || !list || !list.raw) return 0;  /* first visit: nothing is "new" yet */
+    var mine = me().toLowerCase();
+    return list.raw.filter(function (x) { return x.at > mark && x.full.toLowerCase() !== mine; }).length;
+  }
+  function ago(iso) {
+    var t = Date.parse(iso); if (!t) return "";
+    var m = Math.round((Date.now() - t) / 60000);
+    if (m < 2) return "just now"; if (m < 60) return m + " min ago";
+    var h = Math.round(m / 60); if (h < 24) return h + (h === 1 ? " hour ago" : " hours ago");
+    var d = Math.round(h / 24); if (d === 1) return "yesterday"; if (d < 7) return d + " days ago";
+    return prettyDate(new Date(t).toLocaleDateString("en-CA", { timeZone: "America/New_York" }));
+  }
   var peoplePromise = null, facesPromise = null;
   function tag(id) { return String(id).replace(/-/g, "").slice(-12); }
   function people() {
@@ -325,9 +456,7 @@
         var byTag = {}; lib.items.forEach(function (it) { byTag[tag(it.id)] = it; });
         var low = function (s) { return String(s || "").toLowerCase().trim(); };
         var first = function (n) { return low(n).split(/\s+/)[0]; };
-        /* Match the family's preferred spellings to Immich's saved names for ordering only. */
-        var orderName = function (s) { return low(s).replace(/^staci(?=\s|$)/, "stacey").replace(/^kendall(?=\s|$)/, "kendal").replace(/^alexis(?=\s|$)/, "alexa"); };
-        var order = (opt.order || []).map(orderName), hide = (opt.hide || []).map(low), min = opt.min || 3;
+        var order = (opt.order || []).map(low), hide = (opt.hide || []).map(low), min = opt.min || 3;
         /* Same full name twice (Immich sometimes splits a person) -> one circle with both sets of photos. */
         var merged = {}, list = [];
         (data.people || []).forEach(function (p) {
@@ -349,7 +478,7 @@
           delete p.seen; delete p.big;
         });
         /* Family order: an exact full name wins; a first name only counts when nobody else shares it. */
-        var rank = function (p) { var i = order.indexOf(orderName(p.name)); if (i < 0 && firsts[first(p.name)] === 1) i = order.indexOf(orderName(first(p.name))); return i < 0 ? 999 : i; };
+        var rank = function (p) { var i = order.indexOf(low(p.name)); if (i < 0 && firsts[first(p.name)] === 1) i = order.indexOf(first(p.name)); return i < 0 ? 999 : i; };
         list.sort(function (a, b) { return rank(a) - rank(b) || b.items.length - a.items.length || (a.name < b.name ? -1 : 1); });
         return list;
       });
@@ -371,5 +500,5 @@
   }
 
   window.Vault = Vault;
-  window.Witt = { library: library, people: people, faces: faces, src: src, libUrl: libUrl, isLib: isLib, addPhotos: addPhotos, uploadTarget: uploadTarget, wireGate: wireGate, todayNY: todayNY, dayDiff: dayDiff, prettyDate: prettyDate, thisWeekOtherYears: thisWeekOtherYears, playFilm: playFilm, familyFilm: familyFilm, ICON: ICON };
+  window.Witt = { library: library, people: people, faces: faces, uploads: uploads, uploaders: uploaders, me: me, seenMark: seenMark, markSeen: markSeen, newCount: newCount, ago: ago, src: src, libUrl: libUrl, isLib: isLib, addPhotos: addPhotos, uploadTarget: uploadTarget, wireGate: wireGate, todayNY: todayNY, dayDiff: dayDiff, prettyDate: prettyDate, thisWeekOtherYears: thisWeekOtherYears, playFilm: playFilm, familyFilm: familyFilm, ICON: ICON };
 })();

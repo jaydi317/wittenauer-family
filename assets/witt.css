@@ -91,7 +91,7 @@ img{display:block;max-width:100%}
 
 /* ---------- Add photos & videos sheet ---------- */
 .up-wrap{position:fixed;inset:0;z-index:950;background:rgba(0,0,0,.6);display:flex;align-items:flex-end;justify-content:center}
-.up{position:relative;width:100%;max-width:520px;background:#17161A;border-radius:22px 22px 0 0;padding:22px 22px max(26px,env(safe-area-inset-bottom));box-shadow:0 -10px 40px rgba(0,0,0,.5);animation:upin .3s cubic-bezier(.2,.8,.2,1)}
+.up{position:relative;width:100%;max-width:520px;max-height:92vh;max-height:92dvh;overflow-y:auto;overscroll-behavior:contain;background:#17161A;border-radius:22px 22px 0 0;padding:22px 22px max(26px,env(safe-area-inset-bottom));box-shadow:0 -10px 40px rgba(0,0,0,.5);animation:upin .3s cubic-bezier(.2,.8,.2,1)}
 @keyframes upin{from{transform:translateY(40px);opacity:0}}
 .up h2{margin:0 52px 6px 0;font-size:28px}
 .up .lead{margin:0 0 16px;color:var(--ink2);font-size:16px}
@@ -103,3 +103,17 @@ img{display:block;max-width:100%}
 .up .x{position:absolute;right:14px;top:14px}
 @media (min-width:821px){.up-wrap{align-items:center}.up{border-radius:22px}}
 .btn-add svg{width:20px;height:20px}
+.up .who{display:grid;grid-template-columns:repeat(auto-fill,minmax(76px,1fr));gap:14px 10px;margin:4px 0 14px;padding:4px 2px}
+.wface{border:0;background:none;padding:0;cursor:pointer;color:var(--ink);text-align:center;font:inherit}
+.wface i{display:block;position:relative;width:68px;height:68px;margin:0 auto;border-radius:50%;overflow:hidden;background:#26252B;box-shadow:0 0 0 2px rgba(255,255,255,.08)}
+.wface i b,.hi .wf b{position:absolute;inset:0;display:grid;place-items:center;font-size:26px;font-stretch:125%;font-weight:800;color:#A9A59C}
+.wface i img,.hi .wf img{position:relative;width:100%;height:100%;object-fit:cover}
+.wface span{display:block;margin-top:6px;font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wface:focus-visible{outline:none}
+.wface:focus-visible i{box-shadow:0 0 0 3px var(--gold)}
+@media (hover:hover){.wface:hover i{box-shadow:0 0 0 3px var(--gold)}}
+.up .notme{display:block;width:100%;min-height:48px;margin-top:10px;border:0;background:none;color:var(--gold);font:700 15px Archivo,system-ui,sans-serif;cursor:pointer}
+.up .notme.someone,.up .notme:not(.back){border:1.5px solid #3A3840;border-radius:12px;color:var(--ink2)}
+.up .hi{display:flex;align-items:center;gap:14px;margin:0 52px 6px 0}
+.up .hi h2{margin:0}
+.hi .wf{flex:none;position:relative;display:block;width:56px;height:56px;border-radius:50%;overflow:hidden;background:#26252B;box-shadow:0 0 0 2px var(--gold)}

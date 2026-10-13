@@ -14,7 +14,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&display=swap">
-<link rel="stylesheet" href="assets/witt.css?v=3">
+<link rel="stylesheet" href="assets/witt.css?v=4">
 <style>
 /* ---------- Hero: the family film ---------- */
 .hero{position:relative;height:74vh;height:74svh;min-height:560px;overflow:hidden;background:#000}
@@ -71,6 +71,7 @@
 .door .go{display:inline-flex;align-items:center;gap:10px;font-weight:700;color:var(--gold)}
 .door .go svg{width:20px;height:20px;transition:transform .2s}
 .door:hover .go svg{transform:translateX(4px)}
+.badge.new::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--live);box-shadow:0 0 0 4px rgba(255,90,78,.25)}
 .badge{display:inline-flex;align-items:center;gap:8px;font-size:13px;letter-spacing:.14em;text-transform:uppercase;font-weight:800;color:var(--gold)}
 .live-dot{width:10px;height:10px;border-radius:5px;background:var(--live);box-shadow:0 0 0 0 rgba(255,90,78,.7);animation:pulse 1.8s infinite}
 @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(255,90,78,.6)}70%{box-shadow:0 0 0 10px rgba(255,90,78,0)}100%{box-shadow:0 0 0 0 rgba(255,90,78,0)}}
@@ -153,7 +154,7 @@ footer button{background:none;border:0;color:var(--mute);text-decoration:underli
 }
 </style>
 <script src="assets/photos.js?v=3"></script>
-<script src="assets/vault.js?v=5"></script>
+<script src="assets/vault.js?v=4"></script>
 </head>
 <body>
 
@@ -372,6 +373,12 @@ footer button{background:none;border:0;color:var(--mute);text-decoration:underli
       document.getElementById("photoBadge").textContent = (items.length - v).toLocaleString() + " photos · " + v + " videos · since " + ys[0];
       if (Witt.thisWeekOtherYears(items, Witt.todayNY(), 10).length) week(items, true);
       try { faceRow(); } catch (e) {}
+      Witt.uploaders().catch(function () {});
+      Witt.uploads().then(function (list) {
+        var n = Witt.newCount(list, Witt.seenMark());
+        if (!n) return;
+        var b = document.getElementById("photoBadge"); b.textContent = n.toLocaleString() + " new since your last visit"; b.classList.add("new");
+      }).catch(function () {});
     }).catch(function () {});
     nextSlide().then(function () { doorArt(); lazyAll(); });
   }

@@ -14,7 +14,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&display=swap">
-<link rel="stylesheet" href="../assets/witt.css?v=3">
+<link rel="stylesheet" href="../assets/witt.css?v=4">
 <style>
 :root{--pad:clamp(20px,4.4vw,64px);--rowh:300px}
 /* ---------- Hero ---------- */
@@ -189,7 +189,7 @@ footer{padding:60px var(--pad) max(48px,env(safe-area-inset-bottom));display:fle
 }
 </style>
 <script src="../assets/photos.js?v=3"></script>
-<script src="../assets/vault.js?v=5"></script>
+<script src="../assets/vault.js?v=4"></script>
 </head>
 <body>
 
@@ -373,8 +373,9 @@ footer{padding:60px var(--pad) max(48px,env(safe-area-inset-bottom));display:fle
     shown.forEach(function (p, k) {
       var b = document.createElement("button"); b.type = "button"; b.className = "tile shim";
       b.style.width = Math.round(h * Math.min(1.6, Math.max(.6, p.w / p.h))) + "px";
-      b.setAttribute("aria-label", (p.video ? "Video, " : "") + label(p));
-      var badge = opts.ago && p.ago ? '<span class="ago">' + (p.ago === 1 ? "1 year ago" : p.ago + " years ago") + '</span>' : '';
+      b.setAttribute("aria-label", (p.video ? "Video, " : "") + label(p) + (p.by ? ", added by " + p.by : ""));
+      var badge = opts.ago && p.ago ? '<span class="ago">' + (p.ago === 1 ? "1 year ago" : p.ago + " years ago") + '</span>' :
+        opts.by && p.by ? '<span class="ago">' + esc(p.by) + (Witt.ago(p.at) ? ' &middot; ' + esc(Witt.ago(p.at)) : '') + '</span>' : '';
       b.innerHTML = '<img alt="" data-u="' + reg(p) + '" data-size="' + (small ? "t" : "m") + '" style="object-position:' + (p.focus || "50% 40%") + '">' + badge +
         (p.video ? '<span class="vid">' + PLAY + (dur(p.dur) || "Video") + '</span>' : '') +
         (p.caption ? '<span class="lab">' + esc(p.caption) + '</span>' : '');
@@ -461,6 +462,17 @@ footer{padding:60px var(--pad) max(48px,env(safe-area-inset-bottom));display:fle
       }).catch(function () {});
     }).catch(function () { personLink(true); });
   }
+  /* ---------- Just added: newest uploads, with who added them ---------- */
+  function buildJustAdded() {
+    Witt.uploads().then(function (list) {
+      if (!list.length) return;
+      var n = Witt.newCount(list, SEEN);
+      var ppl = document.querySelector(".people");
+      row("Just added", n ? n.toLocaleString() + " new since your last visit" : "From the family \u00b7 newest first", list,
+        { by: true, noThin: true, before: ppl ? ppl.nextSibling : $("rows").firstChild });
+      Witt.markSeen(list);
+    }).catch(function () {});
+  }
   /* wittenauer.family/photos/#person=<id> opens that person's page (used by the home page faces). */
   function personLink(failed) {
     var m = location.hash.match(/person=([A-Za-z0-9-]+)/); if (!m) return;
@@ -486,13 +498,17 @@ footer{padding:60px var(--pad) max(48px,env(safe-area-inset-bottom));display:fle
       $("years").appendChild(c); watch(c.querySelector("img"));
     });
   }
+  var SEEN = "";
   function build() {
+    SEEN = Witt.seenMark();  /* fixed for this visit */
     buildFavorites(); buildYears(); deepLink(true);
     $("libNote").textContent = "Opening the full family library…";
     Witt.library().then(function (lib) {
       if (!buildLibrary(lib)) throw new Error("empty");
       buildYears();
       try { buildPeople(); } catch (e) {}
+      try { buildJustAdded(); } catch (e) {}
+      Witt.uploaders().catch(function () {});  /* warm up the "Add photos" picker */
       deepLink();
     }).catch(function () { $("libNote").textContent = ""; buildFavFallback(); deepLink(); });
     Vault.url("w26m", small ? "m" : "f").then(function (u) { $("heroPic").innerHTML = '<img alt="Amy dancing at the wedding" src="' + u + '">'; $("heroPic").classList.add("on"); });
@@ -606,7 +622,9 @@ footer{padding:60px var(--pad) max(48px,env(safe-area-inset-bottom));display:fle
     }
     $("lbNum").textContent = (vi + 1).toLocaleString() + " of " + vList.length.toLocaleString();
     $("lbYear").textContent = p.date ? Witt.prettyDate(p.date) : "";
-    $("lbCap").textContent = p.caption || (p.video ? "Video" + (dur(p.dur) ? " · " + dur(p.dur) : "") + " · plays best on Wi-Fi" : "");
+    var cap = p.caption || (p.video ? "Video" + (dur(p.dur) ? " · " + dur(p.dur) : "") + " · plays best on Wi-Fi" : "");
+    if (p.by) cap = (cap ? cap + " · " : "") + "Added by " + p.by + (Witt.ago(p.at) ? " " + Witt.ago(p.at) : "");
+    $("lbCap").textContent = cap;
     $("lbPlay").hidden = !!p.video;
     var n = vList[(vi + 1) % vList.length]; if (!n.video) Witt.src(n, small ? "m" : "f").then(function (u) { if (Witt.isLib(n)) { var im = new Image(); im.src = u; } });
     history.replaceState({ witt: "viewer" }, "", "#p=" + p.id);

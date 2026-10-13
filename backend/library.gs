@@ -88,7 +88,10 @@ function people(t, part) {
     const keys = JSON.parse(PropertiesService.getScriptProperties().getProperty('IMMICH_SHARES') || '[]');
     if (!keys.length || !PropertiesService.getScriptProperties().getProperty('IMMICH_API_KEY')) return { ok: false, error: 'not set up' };
     if (!t || String(t).toLowerCase() !== sha256hex_(keys[0])) return { ok: false, error: 'locked' };
-    return part === 'faces' ? facesData_(false) : peopleData_(false);
+    if (part === 'faces') return facesData_(false);
+    if (part === 'uploads') return uploadsData_();
+    if (part === 'uploaders') return uploadersData_();
+    return peopleData_(false);
   } catch (err) { return { ok: false, error: 'unavailable' }; }
 }
 /* Run from a time-driven trigger (every 3 hours): rebuilds both caches ahead of time. */
@@ -196,4 +199,110 @@ function facesData_(force) {
 function sha256hex_(s) {
   return Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, String(s), Utilities.Charset.UTF_8)
     .map(function (b) { return ('0' + (b & 255).toString(16)).slice(-2); }).join('');
+}
+
+/* ===== Who added it: one upload album per person =====
+   Tapping your face on "Add photos" opens YOUR upload link, so everything you add is labeled with your name.
+   Script Properties:
+     UPLOADERS        = JSON [{ "name": "Kendal", "albumId": "<album id>", "key": "<that album's share key, upload ON>" }, ...]
+     ARCHIVE_ALBUM_ID = the "Family archive" album id (synced uploads are added to it, so the site can show them)
+     UPLOAD_LOG_SHEET = id of a Google Sheet with a tab named "uploads" (columns: asset id | by | first seen)
+   The Immich API key also needs album.read and albumAsset.create.
+   Trigger: syncUploads every 5 minutes.
+   Locked parts (same t as people): part=uploaders -> [{name,url}], part=uploads -> [[asset tag, name, first-seen ISO]] newest first. */
+function uploadersData_() {
+  const props = PropertiesService.getScriptProperties();
+  const base = (props.getProperty('IMMICH_URL') || 'https://photos.wittenauer.family').replace(/\/$/, '');
+  const list = JSON.parse(props.getProperty('UPLOADERS') || '[]');
+  if (!list.length) return { ok: false, error: 'no uploaders' };
+  return { ok: true, people: list.map(function (u) { return { name: String(u.name), url: base + '/share/' + encodeURIComponent(u.key) }; }) };
+}
+function uploadLog_() {
+  const id = PropertiesService.getScriptProperties().getProperty('UPLOAD_LOG_SHEET');
+  if (!id) throw new Error('no upload log');
+  const ss = SpreadsheetApp.openById(id);
+  return ss.getSheetByName('uploads') || ss.insertSheet('uploads');
+}
+const UUID_RE_ = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+function uploadsData_() {
+  const cache = CacheService.getScriptCache();
+  const hit = cacheGetBig_(cache, 'witt_uploads_v1'); if (hit) return hit;
+  const sh = uploadLog_(), n = sh.getLastRow();
+  const rows = n ? sh.getRange(1, 1, n, 3).getValues() : [];
+  const up = [];
+  rows.forEach(function (r) {  /* skips a header row or anything malformed */
+    if (!UUID_RE_.test(String(r[0])) || !r[1]) return;
+    const d = r[2] instanceof Date ? r[2] : new Date(r[2]);
+    if (isNaN(d.getTime())) return;
+    up.push([assetTag_(r[0]), String(r[1]), d.toISOString()]);
+  });
+  up.sort(function (a, b) { return a[2] < b[2] ? 1 : -1; });
+  const out = { ok: true, at: new Date().toISOString(), up: up.slice(0, 5000) };
+  cachePutBig_(cache, 'witt_uploads_v1', out, 300);
+  return out;
+}
+/* Time-driven, every 5 minutes: log new uploads per person (with Immich's own upload time) and add them to the Family archive.
+   Cheap when nothing changed: it only asks Immich for assets uploaded since the last run (minus a safety margin). */
+function syncUploads() {
+  const lock = LockService.getScriptLock();
+  if (!lock.tryLock(5000)) return;
+  let changed = false;
+  try {
+    const props = PropertiesService.getScriptProperties(), im = immich_();
+    const list = JSON.parse(props.getProperty('UPLOADERS') || '[]'), archive = props.getProperty('ARCHIVE_ALBUM_ID');
+    if (!list.length || !archive || !im.key) return;
+    const sh = uploadLog_(), n = sh.getLastRow(), seen = {};
+    (n ? sh.getRange(1, 1, n, 1).getValues() : []).forEach(function (r) { if (r[0]) seen[r[0]] = 1; });
+    const H = { 'x-api-key': im.key, Accept: 'application/json' }, started = new Date();
+    const mark = props.getProperty('UPLOAD_SYNC_MARK');
+    const since = mark ? new Date(new Date(mark).getTime() - 30 * 60000).toISOString() : null;  /* 30-minute overlap */
+    const found = {}, order = [];  /* asset id -> { by, at } ; first album in UPLOADERS order wins a tie */
+    let pending = list.map(function (u) { return { u: u, page: 1 }; }), useSince = !!since, failed = false;
+    for (let round = 0; pending.length && round < 50; round++) {
+      const res = UrlFetchApp.fetchAll(pending.map(function (x) {
+        const body = { albumIds: [x.u.albumId], page: x.page, size: 1000 };
+        if (useSince) body.createdAfter = since;
+        return { url: im.base + '/api/search/metadata', method: 'post', contentType: 'application/json', headers: H, muteHttpExceptions: true, payload: JSON.stringify(body) };
+      }));
+      if (useSince && res.some(function (r) { return r.getResponseCode() === 400; })) { useSince = false; pending = list.map(function (u) { return { u: u, page: 1 }; }); round--; continue; }
+      const next = [];
+      res.forEach(function (r, k) {
+        const x = pending[k];
+        if (r.getResponseCode() !== 200) { failed = true; console.log('sync ' + x.u.name + ' ' + r.getResponseCode()); return; }
+        const j = JSON.parse(r.getContentText()) || {};
+        if (!j.assets || !Array.isArray(j.assets.items)) { failed = true; console.log('sync shape ' + x.u.name); return; }
+        j.assets.items.forEach(function (it) {
+          if (!it || !it.id || seen[it.id] || found[it.id]) return;
+          if ('thumbhash' in it && !it.thumbhash) { failed = true; return; }  /* still processing: pick it up next run */
+          const at = it.createdAt && !isNaN(Date.parse(it.createdAt)) ? new Date(it.createdAt) : started;
+          found[it.id] = { by: x.u.name, at: at }; order.push(it.id);
+        });
+        if (j.assets.nextPage || j.assets.items.length >= 1000) next.push({ u: x.u, page: Number(j.assets.nextPage) || x.page + 1 });
+      });
+      pending = next;
+    }
+    const rows = [];
+    for (let i = 0; i < order.length; i += 500) {
+      const ids = order.slice(i, i + 500);
+      const r = UrlFetchApp.fetch(im.base + '/api/albums/' + archive + '/assets', { method: 'put', contentType: 'application/json', headers: H, muteHttpExceptions: true, payload: JSON.stringify({ ids: ids }) });
+      if (r.getResponseCode() >= 300) { failed = true; console.log('archive add failed ' + r.getResponseCode()); continue; }
+      let per = [];
+      try { per = JSON.parse(r.getContentText()) || []; } catch (e) {}
+      const okIds = {};
+      if (Array.isArray(per) && per.length) per.forEach(function (p) { if (p && (p.success || p.error === 'duplicate')) okIds[p.id] = 1; else if (p) { failed = true; console.log('archive add ' + p.id + ': ' + p.error); } });
+      else ids.forEach(function (id) { okIds[id] = 1; });
+      ids.forEach(function (id) { if (okIds[id]) rows.push([id, found[id].by, found[id].at]); });  /* failures are not logged, so they retry */
+    }
+    if (rows.length) {
+      sh.getRange(sh.getLastRow() + 1, 1, rows.length, 3).setValues(rows);
+      changed = true;
+      console.log('synced ' + rows.length + ' new: ' + rows.map(function (r) { return r[1]; }).join(', '));
+    }
+    if (!failed) props.setProperty('UPLOAD_SYNC_MARK', started.toISOString());  /* anything missed is retried from the old mark */
+  } finally { lock.releaseLock(); }
+  if (changed) {
+    const cache = CacheService.getScriptCache();
+    ['witt_library_v2_n', 'witt_uploads_v1_n'].forEach(function (k) { cache.remove(k); });
+    library(); uploadsData_();  /* rebuild now, so family members don't wait on a cold rebuild */
+  }
 }
