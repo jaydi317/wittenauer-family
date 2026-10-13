@@ -241,8 +241,8 @@ function uploadsData_() {
   cachePutBig_(cache, 'witt_uploads_v1', out, 300);
   return out;
 }
-/* Time-driven, every 5 minutes: log new uploads per person (with Immich's own upload time) and add them to the Family archive.
-   Cheap when nothing changed: it only asks Immich for assets uploaded since the last run (minus a safety margin). */
+/* Time-driven, every 5 minutes: log each newly seen personal-album asset and add it to the Family archive.
+   Scan personal albums because duplicate uploads retain the original asset's old createdAt. */
 function syncUploads() {
   const lock = LockService.getScriptLock();
   if (!lock.tryLock(5000)) return;
@@ -254,17 +254,13 @@ function syncUploads() {
     const sh = uploadLog_(), n = sh.getLastRow(), seen = {};
     (n ? sh.getRange(1, 1, n, 1).getValues() : []).forEach(function (r) { if (r[0]) seen[r[0]] = 1; });
     const H = { 'x-api-key': im.key, Accept: 'application/json' }, started = new Date();
-    const mark = props.getProperty('UPLOAD_SYNC_MARK');
-    const since = mark ? new Date(new Date(mark).getTime() - 30 * 60000).toISOString() : null;  /* 30-minute overlap */
     const found = {}, order = [];  /* asset id -> { by, at } ; first album in UPLOADERS order wins a tie */
-    let pending = list.map(function (u) { return { u: u, page: 1 }; }), useSince = !!since, failed = false;
+    let pending = list.map(function (u) { return { u: u, page: 1 }; }), failed = false;
     for (let round = 0; pending.length && round < 50; round++) {
       const res = UrlFetchApp.fetchAll(pending.map(function (x) {
         const body = { albumIds: [x.u.albumId], page: x.page, size: 1000 };
-        if (useSince) body.createdAfter = since;
         return { url: im.base + '/api/search/metadata', method: 'post', contentType: 'application/json', headers: H, muteHttpExceptions: true, payload: JSON.stringify(body) };
       }));
-      if (useSince && res.some(function (r) { return r.getResponseCode() === 400; })) { useSince = false; pending = list.map(function (u) { return { u: u, page: 1 }; }); round--; continue; }
       const next = [];
       res.forEach(function (r, k) {
         const x = pending[k];
@@ -272,9 +268,10 @@ function syncUploads() {
         const j = JSON.parse(r.getContentText()) || {};
         if (!j.assets || !Array.isArray(j.assets.items)) { failed = true; console.log('sync shape ' + x.u.name); return; }
         j.assets.items.forEach(function (it) {
-          if (!it || !it.id || seen[it.id] || found[it.id]) return;
+          if (!it || !it.id || it.isTrashed || seen[it.id] || found[it.id]) return;
           if ('thumbhash' in it && !it.thumbhash) { failed = true; return; }  /* still processing: pick it up next run */
-          const at = it.createdAt && !isNaN(Date.parse(it.createdAt)) ? new Date(it.createdAt) : started;
+          const created = Date.parse(it.createdAt);
+          const at = !isNaN(created) && created >= started.getTime() - 30 * 60000 && created <= started.getTime() ? new Date(created) : started;
           found[it.id] = { by: x.u.name, at: at }; order.push(it.id);
         });
         if (j.assets.nextPage || j.assets.items.length >= 1000) next.push({ u: x.u, page: Number(j.assets.nextPage) || x.page + 1 });
@@ -298,7 +295,7 @@ function syncUploads() {
       changed = true;
       console.log('synced ' + rows.length + ' new: ' + rows.map(function (r) { return r[1]; }).join(', '));
     }
-    if (!failed) props.setProperty('UPLOAD_SYNC_MARK', started.toISOString());  /* anything missed is retried from the old mark */
+    if (!failed) props.setProperty('UPLOAD_SYNC_MARK', started.toISOString());
   } finally { lock.releaseLock(); }
   if (changed) {
     const cache = CacheService.getScriptCache();
