@@ -54,8 +54,8 @@
     },
     forget() {
       store(false, null); key = null; Vault.ready = false;
-      try { ["witt-lib-v2", "witt-people-v2", "witt-faces-v2", "witt-uploads-v1", "witt-uploaders-v1"].forEach(function (k) { sessionStorage.removeItem(k); }); } catch (e) {}
-      try { ["witt-me", "witt-seen-upload", "witt-uploaders"].forEach(function (k) { localStorage.removeItem(k); }); } catch (e) {}
+      try { ["witt-lib-v2", "witt-people-v2", "witt-faces-v2", "witt-uploads-v1", "witt-uploaders-v1", "witt-uploaders-v2"].forEach(function (k) { sessionStorage.removeItem(k); }); } catch (e) {}
+      try { ["witt-me", "witt-seen-upload", "witt-uploaders", "witt-uploaders-v2"].forEach(function (k) { localStorage.removeItem(k); }); } catch (e) {}
     },
     blob(id, size) {
       var ck = size + "/" + id;
@@ -410,14 +410,14 @@
   }
   function uploaders() {
     return Vault.config().then(function (cfg) {
-      return relayUrl(cfg, "uploaders").then(function (u) { return relayGet(u, "witt-uploaders-v1", 6 * 60 * 60 * 1000, 8000); });
+      return relayUrl(cfg, "uploaders").then(function (u) { return relayGet(u, "witt-uploaders-v2", 6 * 60 * 60 * 1000, 8000); });
     }).then(function (d) {
       var list = (d.people || []).filter(function (x) { return x && x.name && /^https:\/\//.test(String(x.url)); });
-      try { localStorage.setItem("witt-uploaders", JSON.stringify(list)); } catch (e) {}
+      try { localStorage.setItem("witt-uploaders-v2", JSON.stringify(list)); } catch (e) {}
       return list;
     }, function (err) {
       /* Relay slow or down: use the list this phone saw last time, if any. */
-      var keep = null; try { keep = JSON.parse(localStorage.getItem("witt-uploaders") || "null"); } catch (e) {}
+      var keep = null; try { keep = JSON.parse(localStorage.getItem("witt-uploaders-v2") || "null"); } catch (e) {}
       if (keep && keep.length) return keep;
       throw err;
     });
