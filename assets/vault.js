@@ -329,6 +329,7 @@
   function libUrl(p, kind) {
     var key = encodeURIComponent(LIB.keys[p.k] || "");
     if (kind === "orig") return LIB.base + "/api/assets/" + p.id + "/original?key=" + key;
+    if (kind === "full") return LIB.base + "/api/assets/" + p.id + "/thumbnail?size=fullsize&key=" + key;
     if (kind === "video") return LIB.base + "/api/assets/" + p.id + "/video/playback?key=" + key;
     return LIB.base + "/api/assets/" + p.id + "/thumbnail?size=" + (kind === "t" ? "thumbnail" : "preview") + "&key=" + key;
   }
@@ -470,9 +471,10 @@
           if (hide.indexOf(low(nm)) > -1 || hide.indexOf(first(nm)) > -1 || hide.indexOf(String(p.id)) > -1) return;
           var items = (p.a || []).map(function (x) { return byTag[x]; }).filter(Boolean);
           var m = merged[low(nm)];
-          if (!m) { m = merged[low(nm)] = { id: p.id, name: nm, ids: [p.id], items: [], seen: {}, big: 0 }; list.push(m); }
+          if (!m) { m = merged[low(nm)] = { id: p.id, name: nm, ids: [p.id], items: [], seen: {}, big: 0, dl: "" }; list.push(m); }
           else m.ids.push(p.id);
-          if (items.length > m.big) { m.big = items.length; m.id = p.id; }  /* the bigger group's face */
+          if (items.length > m.big) { m.big = items.length; m.id = p.id; if (p.dl) { m.dl = p.dl; m.dn = p.dn || 0; } }  /* the bigger group's face and download page */
+          if (!m.dl && p.dl) { m.dl = p.dl; m.dn = p.dn || 0; }
           items.forEach(function (it) { if (!m.seen[it.id]) { m.seen[it.id] = 1; m.items.push(it); } });
         });
         list = list.filter(function (p) { return p.items.length >= min; });
@@ -482,6 +484,7 @@
           var parts = p.name.split(/\s+/);
           p.first = parts[0] + (firsts[first(p.name)] > 1 && parts[1] ? " " + parts[1].charAt(0).toUpperCase() + "." : "");
           delete p.seen; delete p.big;
+          if (!/^https:\/\//.test(p.dl || "")) p.dl = "";
         });
         /* Family order: an exact full name wins; a first name only counts when nobody else shares it. */
         var rank = function (p) { var i = order.indexOf(low(p.name)); if (i < 0 && firsts[first(p.name)] === 1) i = order.indexOf(first(p.name)); return i < 0 ? 999 : i; };

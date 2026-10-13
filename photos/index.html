@@ -125,7 +125,13 @@ footer{padding:60px var(--pad) max(48px,env(safe-area-inset-bottom));display:fle
 /* ---------- Photo viewer ---------- */
 .lb{position:fixed;inset:0;z-index:850;background:#000;touch-action:pan-y}
 .lb .stage{position:absolute;inset:0;display:grid;place-items:center}
-.lb .stage img{max-width:100%;max-height:100%;object-fit:contain;transition:opacity .25s}
+.lb .stage img{max-width:100%;max-height:100%;object-fit:contain;transition:opacity .25s;transform-origin:0 0;touch-action:none;-webkit-user-select:none;user-select:none;cursor:zoom-in}
+.lb.zoomed .stage img{cursor:grab}
+.lb.zoomed .foot,.lb.zoomed .side{opacity:0;pointer-events:none;visibility:hidden}
+.lb .bar,.lb .foot{pointer-events:none}
+.lb .bar .tools,.lb .foot .acts{pointer-events:auto}
+.lb .foot,.lb .side{transition:opacity .2s}
+.lb .bar .tools{display:flex;gap:10px}
 .lb .stage img.dim{opacity:.25}
 .lb .bar{position:absolute;top:0;left:0;right:0;display:flex;align-items:center;justify-content:space-between;padding:14px 16px;padding-top:max(14px,env(safe-area-inset-top));background:linear-gradient(to bottom,rgba(0,0,0,.7),rgba(0,0,0,0))}
 .lb .num{font-size:15px;font-weight:600;color:var(--ink2)}
@@ -189,7 +195,7 @@ footer{padding:60px var(--pad) max(48px,env(safe-area-inset-bottom));display:fle
 }
 </style>
 <script src="../assets/photos.js?v=3"></script>
-<script src="../assets/vault.js?v=7"></script>
+<script src="../assets/vault.js?v=8"></script>
 </head>
 <body>
 
@@ -260,6 +266,7 @@ footer{padding:60px var(--pad) max(48px,env(safe-area-inset-bottom));display:fle
   </div>
   <div class="ovacts">
     <button class="btn btn-glass" id="ovPlay"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4.5v15l13-7.5z"/></svg><span id="ovPlayLabel">Slideshow</span></button>
+    <button class="btn btn-gold" id="ovDl" hidden><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v12M6 10l6 6 6-6M4 20h16"/></svg><span id="ovDlLabel">Download all</span></button>
     <button class="btn btn-gold" id="ovZip"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v12M6 10l6 6 6-6M4 20h16"/></svg><span id="ovZipLabel">Download all</span></button>
   </div>
   <div class="thennow" id="ovThen" hidden>
@@ -277,7 +284,7 @@ footer{padding:60px var(--pad) max(48px,env(safe-area-inset-bottom));display:fle
   <div class="note" id="lbNote" hidden></div>
   <div class="bar">
     <span class="num" id="lbNum"></span>
-    <button class="icon-btn" id="lbClose" aria-label="Close photo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+    <div class="tools"><button class="icon-btn" id="lbZoom" aria-label="Zoom in"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5M11 8v6M8 11h6"/></svg></button><button class="icon-btn" id="lbClose" aria-label="Close photo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
   </div>
   <button class="icon-btn side l" id="lbPrev" aria-label="Previous photo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>
   <button class="icon-btn side r" id="lbNext" aria-label="Next photo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></button>
@@ -350,7 +357,8 @@ footer{padding:60px var(--pad) max(48px,env(safe-area-inset-bottom));display:fle
   window.addEventListener("popstate", function () {
     if (Witt.skipPop) { Witt.skipPop = false; return; }  /* the film closing itself */
     if (document.querySelector(".show")) return;
-    if (!$("sheetWrap").hidden) closeSheet();
+    if (dlClose) dlClose();
+    else if (!$("sheetWrap").hidden) closeSheet();
     else if (!$("lb").hidden) closeViewer();
     else if (!$("ov").hidden) closeGrid();
   });
@@ -560,6 +568,29 @@ footer{padding:60px var(--pad) max(48px,env(safe-area-inset-bottom));display:fle
       Witt.playFilm(Witt.familyFilm(gridList, gridList.length > 160 ? 12 : 0, { title: nm.toUpperCase(), sub: "Through the years", who: nm }), { label: nm + "'s film" });
     } else Witt.playFilm(gridList, { label: gridTitle });
   };
+  /* "Download all": opens that person's private full-quality page on the photo server, which zips everything. */
+  $("ovDl").onclick = function () {
+    var person = gridPerson; if (!person || !person.dl) return;
+    var prev = document.activeElement, n = (person.dn || gridList.length).toLocaleString(), nm = esc(person.first);
+    var w = document.createElement("div"); w.className = "up-wrap";
+    w.innerHTML = '<div class="up" role="dialog" aria-modal="true" aria-labelledby="dlT"><button class="icon-btn x" aria-label="Close">' + ICON.x + '</button>' +
+      '<h2 class="xd" id="dlT">Download all of ' + nm + '&rsquo;s photos</h2>' +
+      '<p class="lead">This opens a private page with all ' + n + ' of ' + nm + '&rsquo;s photos and videos at full quality.</p>' +
+      '<ol><li><b class="n">1</b><span>Tap <b>Open the download page</b> below.</span></li>' +
+      '<li><b class="n">2</b><span>At the top right of that page, tap the <b>download</b> button. Everything comes down as a zip file (a big set can arrive as a few files).</span></li>' +
+      '<li><b class="n">3</b><span>' + (isIOS ? 'On iPhone the zip goes to the <b>Files</b> app &rarr; Downloads. Tap it and it opens into a folder. Then tap Select &rarr; Select All &rarr; Share &rarr; Save Images.'
+        : 'The zip lands in your Downloads folder. Double-click it to open the folder of photos.') + '</span></li></ol>' +
+      '<p class="lead" style="margin:0 0 16px;font-size:15px">Use Wi-Fi. Full-quality photos and videos can add up to several gigabytes. A computer is easiest for big sets.</p>' +
+      '<a class="btn btn-gold go" href="' + esc(person.dl) + '" target="_blank" rel="noopener">Open the download page</a></div>';
+    function close() { document.removeEventListener("keydown", key, true); w.remove(); dlClose = null; if (prev && prev.focus) prev.focus(); }
+    function key(e) { if (e.key === "Escape") { e.stopPropagation(); back(); } }
+    w.querySelector(".x").onclick = back;
+    w.addEventListener("click", function (e) { if (e.target === w) back(); });
+    document.addEventListener("keydown", key, true);
+    document.body.appendChild(w); try { w.querySelector(".go").focus({ preventScroll: true }); } catch (e) {} w.querySelector(".up").scrollTop = 0;
+    dlClose = close; pushLayer("dl");  /* the phone's Back button closes this first */
+  };
+  var dlClose = null;
   /* Person pages: their face up top, Then & Now, and "Play their film". */
   function faceImg(u) { var img = new Image(); img.alt = ""; img.onload = function () { img.classList.add("on"); }; img.src = u; return img; }
   function setFace(person) {
@@ -568,6 +599,8 @@ footer{padding:60px var(--pad) max(48px,env(safe-area-inset-bottom));display:fle
   }
   function setPersonHeader(person, list) {
     $("ovFace").hidden = !person; $("ovFace").textContent = ""; $("ovPlay").hidden = false;
+    $("ovDl").hidden = !(person && person.dl);
+    if (person && person.dl) $("ovDlLabel").textContent = "Download all " + (person.dn || list.length).toLocaleString();
     $("ovPlayLabel").textContent = person ? "Play " + person.first + "\u2019s film" : "Slideshow";
     $("ovThen").hidden = true;
     if (!person) return;
@@ -604,6 +637,7 @@ footer{padding:60px var(--pad) max(48px,env(safe-area-inset-bottom));display:fle
   }
   function show(k) {
     vi = (k + vList.length) % vList.length; var p = vList[vi], img = $("lbImg"), vid = $("lbVid");
+    zReset(); img.dataset.hi = ""; $("lbZoom").hidden = !!p.video;
     vid.pause(); vid.removeAttribute("src"); vid.load(); vid.hidden = true; img.hidden = false; $("lbNote").hidden = true;
     img.classList.add("dim"); img.dataset.full = "";
     Witt.src(p, "t").then(function (u) { if (vList[vi] === p && !img.dataset.full) img.src = u; });
@@ -629,15 +663,116 @@ footer{padding:60px var(--pad) max(48px,env(safe-area-inset-bottom));display:fle
     var n = vList[(vi + 1) % vList.length]; if (!n.video) Witt.src(n, small ? "m" : "f").then(function (u) { if (Witt.isLib(n)) { var im = new Image(); im.src = u; } });
     history.replaceState({ witt: "viewer" }, "", "#p=" + p.id);
   }
-  function closeViewer() { $("lbVid").pause(); $("lb").hidden = true; if ($("ov").hidden) document.body.style.overflow = ""; if (vFocus) vFocus.focus(); }
+  function closeViewer() { zReset(); $("lbVid").pause(); $("lb").hidden = true; if ($("ov").hidden) document.body.style.overflow = ""; if (vFocus) vFocus.focus(); }
   $("lbClose").onclick = back;
   $("lbPrev").onclick = function () { show(vi - 1); };
   $("lbNext").onclick = function () { show(vi + 1); };
   $("lbPlay").onclick = function () { Witt.playFilm(vList, { start: vi, label: "Slideshow" }); };
   $("lbSave").onclick = function () { openSheet(vList[vi]); };
   var sx = null, sy = null;
-  $("lb").addEventListener("touchstart", function (e) { sx = e.touches[0].clientX; sy = e.touches[0].clientY; }, { passive: true });
+  /* ---------- Zoom: pinch, double-tap, the magnifier button, mouse wheel and drag ---------- */
+  var Z = { s: 1, tx: 0, ty: 0, used: false };
+  function zImg() { return $("lbImg"); }
+  function zApply() {
+    var img = zImg();
+    img.style.transform = Z.s === 1 ? "" : "translate(" + Z.tx + "px," + Z.ty + "px) scale(" + Z.s + ")";
+    $("lb").classList.toggle("zoomed", Z.s > 1);
+    $("lbZoom").setAttribute("aria-label", Z.s > 1 ? "Zoom out" : "Zoom in"); $("lbZoom").setAttribute("aria-pressed", String(Z.s > 1));
+  }
+  function zClamp() {
+    var img = zImg(), st = img.parentNode, W = img.offsetWidth, H = img.offsetHeight, SW = st.clientWidth, SH = st.clientHeight, L = img.offsetLeft, T = img.offsetTop;
+    if (Z.s <= 1) { Z.s = 1; Z.tx = 0; Z.ty = 0; return; }
+    if (W * Z.s <= SW) Z.tx = (W - W * Z.s) / 2; else Z.tx = Math.min(-L, Math.max(SW - L - W * Z.s, Z.tx));
+    if (H * Z.s <= SH) Z.ty = (H - H * Z.s) / 2; else Z.ty = Math.min(-T, Math.max(SH - T - H * Z.s, Z.ty));
+  }
+  function zOrigin() { var img = zImg(), r = img.parentNode.getBoundingClientRect(); return { x: r.left + img.offsetLeft, y: r.top + img.offsetTop }; }
+  /* Zoom to scale s keeping the screen point (cx, cy) still. */
+  function zTo(s, cx, cy) {
+    var o = zOrigin(), x0 = (cx - o.x - Z.tx) / Z.s, y0 = (cy - o.y - Z.ty) / Z.s;
+    Z.s = Math.max(1, Math.min(5, s)); Z.tx = cx - o.x - Z.s * x0; Z.ty = cy - o.y - Z.s * y0;
+    zClamp(); zApply(); if (Z.s > 1) zSharpen();
+  }
+  function zReset() { Z.s = 1; Z.tx = 0; Z.ty = 0; zApply(); }
+  /* When zoomed on a phone, swap in the bigger version of the photo. */
+  function zSharpen() {
+    var img = zImg(), p = vList[vi]; if (!p || p.video || img.dataset.hi === p.id) return;
+    img.dataset.hi = p.id;
+    var tries = Witt.isLib(p) ? [Witt.libUrl(p, "orig"), Witt.libUrl(p, "full")] : (small ? null : []);
+    function swap(u) { var t = new Image(); t.onload = function () { if (vList[vi] === p && t.naturalWidth > img.naturalWidth) img.src = u; }; t.onerror = function () { next(); }; t.src = u; }
+    function next() { var u = tries && tries.shift(); if (u) swap(u); }
+    if (tries === null) Witt.src(p, "f").then(function (u) { if (vList[vi] === p) swap(u); });
+    else next();
+  }
+  zImg().addEventListener("load", function () { if (Z.s > 1) { zClamp(); zApply(); } });
+  function zCanZoom() { return !$("lb").hidden && !zImg().hidden && zImg().naturalWidth > 0; }
+  function zToggle(cx, cy) {
+    if (!zCanZoom()) return;
+    if (Z.s > 1) zReset();
+    else { var r = zImg().getBoundingClientRect(); zTo(2.5, cx == null ? r.left + r.width / 2 : cx, cy == null ? r.top + r.height / 2 : cy); }
+  }
+  $("lbZoom").onclick = function () { zToggle(); };
+  var zt = null, lastTap = 0, lastTapX = 0, lastTapY = 0, tapStart = null;
+  zImg().addEventListener("touchstart", function (e) {
+    if (!zCanZoom()) return;
+    if (e.touches.length === 2) {
+      var a = e.touches[0], b = e.touches[1];
+      zt = { pinch: true, d0: Math.max(1, Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY)), s0: Z.s, tx0: Z.tx, ty0: Z.ty,
+             mx: (a.clientX + b.clientX) / 2, my: (a.clientY + b.clientY) / 2 };
+      Z.used = true; e.preventDefault();
+    } else if (e.touches.length === 1) {
+      var t = e.touches[0], now = Date.now();
+      tapStart = { x: t.clientX, y: t.clientY, at: now };
+      if (now - lastTap < 300 && Math.abs(t.clientX - lastTapX) < 30 && Math.abs(t.clientY - lastTapY) < 30) {
+        zToggle(t.clientX, t.clientY); Z.used = true; lastTap = 0; tapStart = null; e.preventDefault(); zt = null; return;
+      }
+      zt = Z.s > 1 ? { pan: true, x0: t.clientX, y0: t.clientY, tx0: Z.tx, ty0: Z.ty } : null;
+      if (zt) Z.used = true;
+    }
+  }, { passive: false });
+  zImg().addEventListener("touchmove", function (e) {
+    if (!zt) return;
+    e.preventDefault();
+    if (zt.pinch && e.touches.length === 2) {
+      var a = e.touches[0], b = e.touches[1], d = Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
+      var mx = (a.clientX + b.clientX) / 2, my = (a.clientY + b.clientY) / 2, o = zOrigin();
+      var x0 = (zt.mx - o.x - zt.tx0) / zt.s0, y0 = (zt.my - o.y - zt.ty0) / zt.s0;
+      Z.s = Math.max(1, Math.min(5, zt.s0 * d / zt.d0)); Z.tx = mx - o.x - Z.s * x0; Z.ty = my - o.y - Z.s * y0;
+      zClamp(); zApply();
+    } else if (zt.pan && e.touches.length === 1) {
+      Z.tx = zt.tx0 + e.touches[0].clientX - zt.x0; Z.ty = zt.ty0 + e.touches[0].clientY - zt.y0; zClamp(); zApply();
+    }
+  }, { passive: false });
+  zImg().addEventListener("touchend", function (e) {
+    /* Remember a real tap (short, barely moved) so the next quick tap counts as a double-tap. A swipe never does. */
+    if (tapStart && !e.touches.length) {
+      var c = e.changedTouches[0];
+      if (Date.now() - tapStart.at < 250 && Math.abs(c.clientX - tapStart.x) < 10 && Math.abs(c.clientY - tapStart.y) < 10) { lastTap = Date.now(); lastTapX = c.clientX; lastTapY = c.clientY; }
+      else lastTap = 0;
+      tapStart = null;
+    }
+    if (!zt) return;
+    if (e.touches.length === 0) { if (Z.s < 1.05) zReset(); else zSharpen(); zt = null; }
+    else if (e.touches.length === 1 && zt.pinch) { var t = e.touches[0]; zt = Z.s > 1 ? { pan: true, x0: t.clientX, y0: t.clientY, tx0: Z.tx, ty0: Z.ty } : null; }
+  });
+  zImg().addEventListener("touchcancel", function () { zt = null; tapStart = null; Z.used = false; if (Z.s < 1.05) zReset(); });
+  $("lb").addEventListener("gesturestart", function (e) { e.preventDefault(); });
+  $("lb").addEventListener("gesturechange", function (e) { e.preventDefault(); });
+  zImg().addEventListener("dblclick", function (e) { zToggle(e.clientX, e.clientY); });
+  $("lb").addEventListener("wheel", function (e) {
+    if (!zCanZoom()) return;
+    e.preventDefault();
+    var dy = e.deltaY * (e.deltaMode === 1 ? 33 : e.deltaMode === 2 ? 400 : 1);
+    zTo(Z.s * Math.exp(-dy * (e.ctrlKey ? 0.01 : 0.002)), e.clientX, e.clientY);
+  }, { passive: false });
+  var drag = null;
+  zImg().addEventListener("mousedown", function (e) { if (Z.s > 1) { drag = { x0: e.clientX, y0: e.clientY, tx0: Z.tx, ty0: Z.ty }; e.preventDefault(); } });
+  window.addEventListener("mousemove", function (e) { if (!drag) return; Z.tx = drag.tx0 + e.clientX - drag.x0; Z.ty = drag.ty0 + e.clientY - drag.y0; zClamp(); zApply(); });
+  window.addEventListener("mouseup", function () { drag = null; });
+  window.addEventListener("resize", function () { if (Z.s > 1) { zClamp(); zApply(); } });
+
+  $("lb").addEventListener("touchstart", function (e) { if (e.touches.length > 1) { sx = null; return; } sx = e.touches[0].clientX; sy = e.touches[0].clientY; }, { passive: true });
   $("lb").addEventListener("touchend", function (e) {
+    if (Z.used || Z.s > 1) { if (!e.touches.length) Z.used = false; sx = null; return; }  /* zoom gestures never flip photos */
     if (sx == null || e.target.closest("button") || (e.target.closest("video") && sy > innerHeight * .8)) { sx = null; return; }
     var dx = e.changedTouches[0].clientX - sx, dy = e.changedTouches[0].clientY - sy;
     if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy)) show(vi + (dx < 0 ? 1 : -1));

@@ -139,7 +139,7 @@ function peopleData_(force) {
     const inShare = {};
     lib.shares.forEach(function (s) { s.a.forEach(function (a) { inShare[a[0]] = 1; }); });
     const list = namedPeople_(im), byId = {};
-    list.forEach(function (p) { byId[p.id] = { a: [], seen: {} }; });
+    list.forEach(function (p) { byId[p.id] = { a: [], full: [], seen: {} }; });
     let pending = list.map(function (p) { return { id: p.id, page: 1 }; });
     for (let round = 0; pending.length && round < 30; round++) {
       const next = [];
@@ -156,7 +156,7 @@ function peopleData_(force) {
           const who = byId[batch[k].id], items = j.assets.items;
           items.forEach(function (it) {
             if (!it || !inShare[it.id] || who.seen[it.id]) return;
-            who.seen[it.id] = 1; who.a.push(assetTag_(it.id));
+            who.seen[it.id] = 1; who.a.push(assetTag_(it.id)); who.full.push(it.id);
           });
           if (j.assets.nextPage || items.length >= 1000) next.push({ id: batch[k].id, page: Number(j.assets.nextPage) || batch[k].page + 1 });
         }
@@ -164,9 +164,14 @@ function peopleData_(force) {
       pending = next;
     }
     const out = { ok: true, at: new Date().toISOString(), people: [] };
+    let links = {};
+    if (force) { try { syncPersonLinks_(im, list.filter(function (p) { return byId[p.id].full.length; }).map(function (p) { return { id: p.id, name: String(p.name).trim(), ids: byId[p.id].full }; })); } catch (e) { console.log('person links: ' + e); } }
+    links = storedPersonLinks_();
     list.forEach(function (p) {
       const w = byId[p.id]; if (!w.a.length) return;
-      out.people.push({ id: p.id, name: String(p.name).trim(), n: w.a.length, a: w.a });
+      const row = { id: p.id, name: String(p.name).trim(), n: w.a.length, a: w.a };
+      if (links[p.id] && links[p.id].key) { row.dl = im.base + '/share/' + encodeURIComponent(links[p.id].key); row.dn = links[p.id].n || 0; }
+      out.people.push(row);
     });
     console.log('people', out.people.map(function (p) { return p.name + ':' + p.n; }).join(', '));
     if (!out.people.length) return { ok: false, error: 'no named people in the shares' };  /* never cache an empty answer */
@@ -241,8 +246,8 @@ function uploadsData_() {
   cachePutBig_(cache, 'witt_uploads_v1', out, 300);
   return out;
 }
-/* Time-driven, every 5 minutes: log each newly seen personal-album asset and add it to the Family archive.
-   Scan personal albums because duplicate uploads retain the original asset's old createdAt. */
+/* Time-driven, every 5 minutes: log new uploads per person (with Immich's own upload time) and add them to the Family archive.
+   Cheap when nothing changed: it only asks Immich for assets uploaded since the last run (minus a safety margin). */
 function syncUploads() {
   const lock = LockService.getScriptLock();
   if (!lock.tryLock(5000)) return;
@@ -254,13 +259,17 @@ function syncUploads() {
     const sh = uploadLog_(), n = sh.getLastRow(), seen = {};
     (n ? sh.getRange(1, 1, n, 1).getValues() : []).forEach(function (r) { if (r[0]) seen[r[0]] = 1; });
     const H = { 'x-api-key': im.key, Accept: 'application/json' }, started = new Date();
+    const mark = props.getProperty('UPLOAD_SYNC_MARK');
+    const since = mark ? new Date(new Date(mark).getTime() - 30 * 60000).toISOString() : null;  /* 30-minute overlap */
     const found = {}, order = [];  /* asset id -> { by, at } ; first album in UPLOADERS order wins a tie */
-    let pending = list.map(function (u) { return { u: u, page: 1 }; }), failed = false;
+    let pending = list.map(function (u) { return { u: u, page: 1 }; }), useSince = !!since, failed = false;
     for (let round = 0; pending.length && round < 50; round++) {
       const res = UrlFetchApp.fetchAll(pending.map(function (x) {
         const body = { albumIds: [x.u.albumId], page: x.page, size: 1000 };
+        if (useSince) body.createdAfter = since;
         return { url: im.base + '/api/search/metadata', method: 'post', contentType: 'application/json', headers: H, muteHttpExceptions: true, payload: JSON.stringify(body) };
       }));
+      if (useSince && res.some(function (r) { return r.getResponseCode() === 400; })) { useSince = false; pending = list.map(function (u) { return { u: u, page: 1 }; }); round--; continue; }
       const next = [];
       res.forEach(function (r, k) {
         const x = pending[k];
@@ -268,10 +277,9 @@ function syncUploads() {
         const j = JSON.parse(r.getContentText()) || {};
         if (!j.assets || !Array.isArray(j.assets.items)) { failed = true; console.log('sync shape ' + x.u.name); return; }
         j.assets.items.forEach(function (it) {
-          if (!it || !it.id || it.isTrashed || seen[it.id] || found[it.id]) return;
+          if (!it || !it.id || seen[it.id] || found[it.id]) return;
           if ('thumbhash' in it && !it.thumbhash) { failed = true; return; }  /* still processing: pick it up next run */
-          const created = Date.parse(it.createdAt);
-          const at = !isNaN(created) && created >= started.getTime() - 30 * 60000 && created <= started.getTime() ? new Date(created) : started;
+          const at = it.createdAt && !isNaN(Date.parse(it.createdAt)) ? new Date(it.createdAt) : started;
           found[it.id] = { by: x.u.name, at: at }; order.push(it.id);
         });
         if (j.assets.nextPage || j.assets.items.length >= 1000) next.push({ u: x.u, page: Number(j.assets.nextPage) || x.page + 1 });
@@ -295,11 +303,53 @@ function syncUploads() {
       changed = true;
       console.log('synced ' + rows.length + ' new: ' + rows.map(function (r) { return r[1]; }).join(', '));
     }
-    if (!failed) props.setProperty('UPLOAD_SYNC_MARK', started.toISOString());
+    if (!failed) props.setProperty('UPLOAD_SYNC_MARK', started.toISOString());  /* anything missed is retried from the old mark */
   } finally { lock.releaseLock(); }
   if (changed) {
     const cache = CacheService.getScriptCache();
     ['witt_library_v2_n', 'witt_uploads_v1_n'].forEach(function (k) { cache.remove(k); });
     library(); uploadsData_();  /* rebuild now, so family members don't wait on a cold rebuild */
   }
+}
+
+/* ===== "Download all of my photos": one private Immich share page per person =====
+   Each named person gets an individual shared link (download ON, upload OFF) holding every family-share photo they're in.
+   warmPeople keeps them exact: when a person's photo set changes, a fresh link is made and the old one deleted
+   (so removed or un-tagged photos drop off), and links for people no longer shown are deleted.
+   Stored one Script Property per person: PL_<personId> = { id, key, n, h }. API key needs sharedLink.create + sharedLink.delete.
+   Note: Immich 3.3.1 turns download off if metadata is hidden, so these pages show photo details like the family archive does.
+   The site only gets each link behind the family-word lock (inside the people list). */
+function storedPersonLinks_() {
+  const all = PropertiesService.getScriptProperties().getProperties(), out = {};
+  Object.keys(all).forEach(function (k) { if (k.indexOf('PL_') === 0) { try { out[k.slice(3)] = JSON.parse(all[k]); } catch (e) {} } });
+  return out;
+}
+function idsHash_(ids) {
+  return Utilities.base64EncodeWebSafe(Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_1, ids.slice().sort().join(','))).slice(0, 16);
+}
+function syncPersonLinks_(im, people) {
+  const props = PropertiesService.getScriptProperties(), have = storedPersonLinks_(), keep = {};
+  const H = { 'x-api-key': im.key, Accept: 'application/json' };
+  function del(linkId) {
+    const r = UrlFetchApp.fetch(im.base + '/api/shared-links/' + linkId, { method: 'delete', headers: H, muteHttpExceptions: true });
+    if (r.getResponseCode() >= 300 && r.getResponseCode() !== 404) console.log('link delete ' + r.getResponseCode());
+  }
+  people.forEach(function (p) {
+    keep[p.id] = 1;
+    try {
+      const h = idsHash_(p.ids), old = have[p.id];
+      if (old && old.id && old.h === h) return;  /* unchanged */
+      const c = UrlFetchApp.fetch(im.base + '/api/shared-links', { method: 'post', contentType: 'application/json', headers: H, muteHttpExceptions: true,
+        payload: JSON.stringify({ type: 'INDIVIDUAL', assetIds: p.ids, description: 'All photos of ' + p.name, allowDownload: true, allowUpload: false, showMetadata: true }) });
+      if (c.getResponseCode() >= 300) { console.log('link create ' + p.name + ' ' + c.getResponseCode() + ' ' + c.getContentText().slice(0, 200)); return; }  /* old link stays until a new one works */
+      const j = JSON.parse(c.getContentText()) || {};
+      if (!j.id || !j.key) { console.log('link create shape ' + p.name); return; }
+      props.setProperty('PL_' + p.id, JSON.stringify({ id: j.id, key: j.key, n: p.ids.length, h: h }));
+      if (old && old.id) del(old.id);
+    } catch (e) { console.log('link ' + p.name + ': ' + e); }
+  });
+  Object.keys(have).forEach(function (pid) {  /* people no longer shown (renamed, merged, hidden): remove their links */
+    if (keep[pid]) return;
+    try { if (have[pid].id) del(have[pid].id); props.deleteProperty('PL_' + pid); } catch (e) { console.log('link prune: ' + e); }
+  });
 }
