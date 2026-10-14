@@ -48,13 +48,13 @@
       return true;
     },
     config() {
-      if (!cache.cfg) cache.cfg = fetch(ROOT + "media/cfg.bin?v=6").then(function (r) { return r.arrayBuffer(); })
+      if (!cache.cfg) cache.cfg = fetch(ROOT + "media/cfg.bin?v=7").then(function (r) { return r.arrayBuffer(); })
         .then(function (b) { return decrypt(key, b); }).then(function (p) { return JSON.parse(new TextDecoder().decode(p)); });
       return cache.cfg;
     },
     forget() {
       store(false, null); key = null; Vault.ready = false;
-      try { ["witt-lib-v2", "witt-people-v2", "witt-faces-v2", "witt-uploads-v1", "witt-uploaders-v1", "witt-uploaders-v2"].forEach(function (k) { sessionStorage.removeItem(k); }); } catch (e) {}
+      try { ["witt-lib-v2", "witt-people-v3", "witt-faces-v2", "witt-uploads-v1", "witt-uploaders-v1", "witt-uploaders-v2"].forEach(function (k) { sessionStorage.removeItem(k); }); } catch (e) {}
       try { ["witt-me", "witt-seen-upload", "witt-uploaders", "witt-uploaders-v2"].forEach(function (k) { localStorage.removeItem(k); }); } catch (e) {}
     },
     blob(id, size) {
@@ -471,7 +471,7 @@
   /* ---------- Who's this? (unnamed faces the family can name) ---------- */
   function unnamed() {
     return Vault.config().then(function (cfg) {
-      return relayUrl(cfg, "unnamed").then(function (u) { return relayGet(u, "witt-unnamed-v1", 10 * 60 * 1000, 30000); });
+      return relayUrl(cfg, "unnamed").then(function (u) { return relayGet(u, "witt-unnamed-v2", 10 * 60 * 1000, 30000); });
     }).then(function (d) { return (d.faces || []).map(function (f) { if (f) f.n = Number(f.n) || 0; return f; }).filter(function (f) { return f && f.id && /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+\/=]+$/.test(f.face); }); });
   }
   function nameFace(id, name) {
@@ -486,7 +486,7 @@
         "busy": "The photo server is busy. Please try again in a minute.", "too many": "Lots of names saved this hour. Please try again a little later.",
         "bad name": "Please type a name using letters.", "net": "Couldn\u2019t reach the photo server. Check your connection and try again." };
       if (!d || !d.ok) { var e = new Error(FRIENDLY[d && d.error] || "That didn\u2019t save. Please try again in a minute."); e.code = d && d.error; throw e; }
-      try { ["witt-people-v2", "witt-faces-v2", "witt-unnamed-v1", "witt-lib-v2"].forEach(function (k) { sessionStorage.removeItem(k); }); } catch (e) {}
+      try { ["witt-people-v3", "witt-faces-v2", "witt-unnamed-v2", "witt-lib-v2"].forEach(function (k) { sessionStorage.removeItem(k); }); } catch (e) {}
       peoplePromise = null; facesPromise = null;
       return d;
     });
@@ -497,7 +497,7 @@
     if (peoplePromise) return peoplePromise;
     peoplePromise = Promise.all([Vault.config(), library()]).then(function (r) {
       var cfg = r[0], lib = r[1], opt = cfg.people || {};
-      return relayUrl(cfg).then(function (u) { return relayGet(u, "witt-people-v2", 6 * 60 * 60 * 1000, 45000); }).then(function (data) {
+      return relayUrl(cfg).then(function (u) { return relayGet(u, "witt-people-v3", 6 * 60 * 60 * 1000, 45000); }).then(function (data) {
         var byTag = {}; lib.items.forEach(function (it) { byTag[tag(it.id)] = it; });
         var low = function (s) { return String(s || "").toLowerCase().trim(); };
         var first = function (n) { return low(n).split(/\s+/)[0]; };
