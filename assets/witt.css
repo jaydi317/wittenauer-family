@@ -117,3 +117,14 @@ img{display:block;max-width:100%}
 .up .hi{display:flex;align-items:center;gap:14px;margin:0 52px 6px 0}
 .up .hi h2{margin:0}
 .hi .wf{flex:none;position:relative;display:block;width:56px;height:56px;border-radius:50%;overflow:hidden;background:#26252B;box-shadow:0 0 0 2px var(--gold)}
+.up .find{width:100%;height:48px;margin:0 0 12px;border-radius:12px;border:1.5px solid #3A3840;background:#121115;color:var(--ink);font:500 16px Archivo,system-ui,sans-serif;padding:0 14px}
+.up .find:focus{outline:none;border-color:var(--gold)}
+.up .who{grid-template-columns:repeat(auto-fill,minmax(68px,1fr));gap:12px 8px}
+.wface i{width:60px;height:60px}
+@media (min-width:821px){.wface i{width:68px;height:68px}}
+.up.wide{max-width:720px}
+.up .bigface{display:block;width:120px;height:120px;margin:4px auto 14px;border-radius:50%;overflow:hidden;box-shadow:0 0 0 3px var(--gold)}
+.up .bigface img{width:100%;height:100%;object-fit:cover}
+.up .row2{display:grid;gap:10px;margin-top:12px}
+.up .msg{min-height:22px;margin:8px 0 0;font-size:15px;font-weight:600;color:#FF9B8F}
+.up .msg.ok{color:var(--gold)}

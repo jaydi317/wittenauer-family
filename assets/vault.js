@@ -289,28 +289,36 @@
     var MINE = "Everything you add goes into the family library with your name on it. Full quality, videos too.";
     function genericLead() { return "They go straight into <b>" + esc(generic.album) + "</b> at full quality, so everyone can see them."; }
     function picker() {
-      box.innerHTML = '<h2 class="xd" id="upT">Who&rsquo;s adding?</h2><p class="lead">Tap your name. This phone will remember, and your photos will say they&rsquo;re from you.</p><div class="who" role="group" aria-label="Family members"></div>' +
+      box.innerHTML = '<h2 class="xd" id="upT">Who&rsquo;s adding?</h2><p class="lead">Tap your name. This phone will remember, and your photos will say they&rsquo;re from you.</p>' +
+        (LIST.length > 8 ? '<input class="find" type="search" placeholder="Type your name to find it" aria-label="Find your name" autocomplete="off">' : '') +
+        '<div class="who" role="group" aria-label="Family members"></div>' +
         (generic ? '<button type="button" class="notme someone">Someone else</button>' : '');
       var grid = box.querySelector(".who");
       LIST.forEach(function (u) {
         var b = document.createElement("button"); b.type = "button"; b.className = "wface";
         b.innerHTML = faceHTML(u.name) + '<span>' + esc(label(u.name)) + '</span>';
         b.onclick = function () { steps(u, { lead: MINE }); };
+        b.dataset.n = String(u.name).toLowerCase();
         grid.appendChild(b);
       });
+      var find = box.querySelector(".find");
+      if (find) find.oninput = function () { var q = find.value.toLowerCase().trim(); grid.querySelectorAll(".wface").forEach(function (b) { b.hidden = q && b.dataset.n.indexOf(q) < 0; }); };
       paintFaces();
       var so = box.querySelector(".someone");
       if (so) so.onclick = function () { steps({ url: generic.url }, { lead: genericLead(), back: true }); };
       var f = grid.querySelector("button"); if (f) f.focus();
     }
+    var CFG = null;
     Vault.config().then(function (cfg) {
-      generic = uploadTarget(cfg);
+      CFG = cfg; generic = uploadTarget(cfg);
       /* Faces fill in when ready; the picker never waits for them. */
       Promise.all([people(), faces()]).then(function (r) { PEOPLE = r[0]; FACES = r[1]; paintFaces(); }).catch(function () {});
       return uploaders();
     }).then(function (list) {
-      LIST = list; if (!LIST.length) throw new Error("none");
+      LIST = list.slice(); if (!LIST.length) throw new Error("none");
       label = labeler(LIST.map(function (u) { return u.name; }));
+      var rank = familyRanker(CFG, LIST.map(function (u) { return u.name; }));
+      LIST.sort(function (a, b) { return rank(a.name) - rank(b.name) || (a.name < b.name ? -1 : 1); });
       var mine = me(), u = mine && LIST.filter(function (x) { return low(x.name) === low(mine); })[0];
       if (u) steps(u, { lead: MINE }); else picker();
     }).catch(function () {
@@ -453,6 +461,36 @@
     var d = Math.round(h / 24); if (d === 1) return "yesterday"; if (d < 7) return d + " days ago";
     return prettyDate(new Date(t).toLocaleDateString("en-CA", { timeZone: "America/New_York" }));
   }
+  /* Family order (from the locked settings): an exact full name wins; a first name counts when nobody else shares it. */
+  function familyRanker(cfg, names) {
+    var low = function (t) { return String(t || "").toLowerCase().trim(); };
+    var order = ((cfg && cfg.people && cfg.people.order) || []).map(low), firsts = {};
+    names.forEach(function (n) { var f = low(n).split(/\s+/)[0]; firsts[f] = (firsts[f] || 0) + 1; });
+    return function (n) { var i = order.indexOf(low(n)); var f = low(n).split(/\s+/)[0]; if (i < 0 && firsts[f] === 1) i = order.indexOf(f); return i < 0 ? 999 : i; };
+  }
+  /* ---------- Who's this? (unnamed faces the family can name) ---------- */
+  function unnamed() {
+    return Vault.config().then(function (cfg) {
+      return relayUrl(cfg, "unnamed").then(function (u) { return relayGet(u, "witt-unnamed-v1", 10 * 60 * 1000, 30000); });
+    }).then(function (d) { return (d.faces || []).map(function (f) { if (f) f.n = Number(f.n) || 0; return f; }).filter(function (f) { return f && f.id && /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+\/=]+$/.test(f.face); }); });
+  }
+  function nameFace(id, name) {
+    return Vault.config().then(function (cfg) {
+      return relayUrl(cfg, "name").then(function (u) {
+        var url = u + "&id=" + encodeURIComponent(id) + "&name=" + encodeURIComponent(name) + "&w=" + encodeURIComponent(cfg.wt || "") + "&by=" + encodeURIComponent(me());
+        var ctl = "AbortController" in window ? new AbortController() : null, tm = setTimeout(function () { if (ctl) ctl.abort(); }, 30000);
+        return fetch(url, ctl ? { signal: ctl.signal } : {}).then(function (r) { clearTimeout(tm); return r.json(); }).catch(function () { return { ok: false, error: "net" }; });
+      });
+    }, function () { throw new Error("net"); }).then(function (d) {
+      var FRIENDLY = { "already named": "Someone already named this person. Thank you!", "gone": "Someone already named this person. Thank you!",
+        "busy": "The photo server is busy. Please try again in a minute.", "too many": "Lots of names saved this hour. Please try again a little later.",
+        "bad name": "Please type a name using letters.", "net": "Couldn\u2019t reach the photo server. Check your connection and try again." };
+      if (!d || !d.ok) { var e = new Error(FRIENDLY[d && d.error] || "That didn\u2019t save. Please try again in a minute."); e.code = d && d.error; throw e; }
+      try { ["witt-people-v2", "witt-faces-v2", "witt-unnamed-v1", "witt-lib-v2"].forEach(function (k) { sessionStorage.removeItem(k); }); } catch (e) {}
+      peoplePromise = null; facesPromise = null;
+      return d;
+    });
+  }
   var peoplePromise = null, facesPromise = null;
   function tag(id) { return String(id).replace(/-/g, "").slice(-12); }
   function people() {
@@ -509,5 +547,5 @@
   }
 
   window.Vault = Vault;
-  window.Witt = { library: library, people: people, faces: faces, uploads: uploads, uploaders: uploaders, me: me, seenMark: seenMark, markSeen: markSeen, newCount: newCount, ago: ago, src: src, libUrl: libUrl, isLib: isLib, addPhotos: addPhotos, uploadTarget: uploadTarget, wireGate: wireGate, todayNY: todayNY, dayDiff: dayDiff, prettyDate: prettyDate, thisWeekOtherYears: thisWeekOtherYears, playFilm: playFilm, familyFilm: familyFilm, ICON: ICON };
+  window.Witt = { library: library, people: people, faces: faces, uploads: uploads, uploaders: uploaders, me: me, unnamed: unnamed, nameFace: nameFace, familyRanker: familyRanker, seenMark: seenMark, markSeen: markSeen, newCount: newCount, ago: ago, src: src, libUrl: libUrl, isLib: isLib, addPhotos: addPhotos, uploadTarget: uploadTarget, wireGate: wireGate, todayNY: todayNY, dayDiff: dayDiff, prettyDate: prettyDate, thisWeekOtherYears: thisWeekOtherYears, playFilm: playFilm, familyFilm: familyFilm, ICON: ICON };
 })();

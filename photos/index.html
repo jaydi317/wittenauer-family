@@ -14,7 +14,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&display=swap">
-<link rel="stylesheet" href="../assets/witt.css?v=5">
+<link rel="stylesheet" href="../assets/witt.css?v=6">
 <style>
 :root{--pad:clamp(20px,4.4vw,64px);--rowh:300px}
 /* ---------- Hero ---------- */
@@ -49,6 +49,11 @@
 @media (hover:hover){.face:hover i{box-shadow:0 0 0 3px var(--gold);transform:translateY(-3px)}}
 .face:focus-visible i{box-shadow:0 0 0 3px var(--gold);transform:translateY(-3px)}
 .face:focus-visible{outline:none}
+.face.q i{box-shadow:0 0 0 2px rgba(226,178,89,.55)}
+.face.q .nm{color:var(--gold)}
+.rh .all.small{font-size:15px}
+.up .sugs{display:flex;flex-wrap:wrap;gap:8px}
+.up .chip2{min-height:44px;padding:0 14px;border-radius:22px;border:1px solid #3A3840;background:#1E1D22;color:var(--ink);font:600 15px Archivo,system-ui,sans-serif;cursor:pointer}
 .face .nm{display:block;margin-top:10px;font-weight:700;font-size:16px;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .face .ct{display:block;margin-top:2px;font-size:13px;color:var(--mute)}
 .ovface{flex:none;position:relative;width:52px;height:52px;border-radius:50%;overflow:hidden;background:#1C1B20;box-shadow:0 0 0 2px var(--gold);display:grid;place-items:center;font-size:22px;font-stretch:125%;font-weight:800;color:#8A8690}
@@ -195,7 +200,7 @@ footer{padding:60px var(--pad) max(48px,env(safe-area-inset-bottom));display:fle
 }
 </style>
 <script src="../assets/photos.js?v=3"></script>
-<script src="../assets/vault.js?v=8"></script>
+<script src="../assets/vault.js?v=9"></script>
 </head>
 <body>
 
@@ -357,7 +362,8 @@ footer{padding:60px var(--pad) max(48px,env(safe-area-inset-bottom));display:fle
   window.addEventListener("popstate", function () {
     if (Witt.skipPop) { Witt.skipPop = false; return; }  /* the film closing itself */
     if (document.querySelector(".show")) return;
-    if (dlClose) dlClose();
+    if (sheetClose) sheetClose();
+    else if (dlClose) dlClose();
     else if (!$("sheetWrap").hidden) closeSheet();
     else if (!$("lb").hidden) closeViewer();
     else if (!$("ov").hidden) closeGrid();
@@ -447,7 +453,7 @@ footer{padding:60px var(--pad) max(48px,env(safe-area-inset-bottom));display:fle
     Witt.people().then(function (list) {
       PEOPLE = list; if (!list.length) return;
       var sec = document.createElement("section"); sec.className = "row people"; sec.setAttribute("aria-label", "Find yourself");
-      sec.innerHTML = '<div class="rh"><h2>Find yourself<small>Tap a face to see every photo they\u2019re in</small></h2></div><div class="scroller"></div>' +
+      sec.innerHTML = '<div class="rh"><h2>Find yourself<small>Tap a face to see every photo they\u2019re in</small></h2><button class="all" type="button">See everyone (' + list.length + ')</button></div><div class="scroller"></div>' +
         '<button class="icon-btn arrow l" aria-label="Scroll left">' + ICON.prev + '</button><button class="icon-btn arrow r" aria-label="Scroll right">' + ICON.next + '</button>';
       var sc = sec.querySelector(".scroller");
       list.forEach(function (person) {
@@ -459,14 +465,17 @@ footer{padding:60px var(--pad) max(48px,env(safe-area-inset-bottom));display:fle
       });
       sec.querySelector(".arrow.l").onclick = function () { sc.scrollBy({ left: -sc.clientWidth * .8, behavior: "smooth" }); };
       sec.querySelector(".arrow.r").onclick = function () { sc.scrollBy({ left: sc.clientWidth * .8, behavior: "smooth" }); };
+      sec.querySelector(".all").onclick = openEveryone;
       $("rows").insertBefore(sec, $("rows").firstChild);
       personLink();
+      buildWhosThis(sec);
       facesP.then(function (f) {
         FACES = f;
         sec.querySelectorAll(".face").forEach(function (b) {
           var u = f[b.dataset.pid]; if (u) b.querySelector("i").appendChild(faceImg(u));
         });
         if (gridPerson && !$("ov").hidden && FACES[gridPerson.id] && !$("ovFace").querySelector("img")) $("ovFace").appendChild(faceImg(FACES[gridPerson.id]));
+        document.querySelectorAll(".up .wface[data-pid]").forEach(function (b) { var u = f[b.dataset.pid]; if (u && !b.querySelector("img")) b.querySelector("i").appendChild(faceImg(u)); });
       }).catch(function () {});
     }).catch(function () { personLink(true); });
   }
@@ -481,8 +490,117 @@ footer{padding:60px var(--pad) max(48px,env(safe-area-inset-bottom));display:fle
       Witt.markSeen(list);
     }).catch(function () {});
   }
+  /* ---------- Small bottom sheets (with the phone's Back button) ---------- */
+  var sheetClose = null;
+  function sheet(html, wide) {
+    var prev = document.activeElement, w = document.createElement("div"); w.className = "up-wrap";
+    w.innerHTML = '<div class="up' + (wide ? ' wide' : '') + '" role="dialog" aria-modal="true" aria-labelledby="shT"><button class="icon-btn x" aria-label="Close">' + ICON.x + '</button>' + html + '</div>';
+    function close() { document.removeEventListener("keydown", key, true); w.remove(); sheetClose = null; sheetClosing = false; if (prev && prev.focus && document.body.contains(prev)) prev.focus(); }
+    function key(e) { if (e.key === "Escape") { e.stopPropagation(); sheetBack(); } }
+    w.querySelector(".x").onclick = sheetBack;
+    w.addEventListener("click", function (e) { if (e.target === w && !w.querySelector("input:focus")) sheetBack(); });
+    document.addEventListener("keydown", key, true);
+    document.body.appendChild(w); sheetClose = close; pushLayer("sheet");
+    return w;
+  }
+  var sheetClosing = false;
+  function sheetBack() { if (sheetClosing || !sheetClose) return; sheetClosing = true; back(); }
+  function closeSheetThen(fn) { if (!sheetClose) { fn(); return; } if (sheetClosing) return; var once = function () { window.removeEventListener("popstate", once); setTimeout(fn, 0); }; window.addEventListener("popstate", once); sheetBack(); }
+  /* ---------- See everyone: every face at once, with a name search ---------- */
+  function openEveryone() {
+    if (!PEOPLE.length) return;
+    var w = sheet('<h2 class="xd" id="shT">Everyone</h2><input class="find" type="search" placeholder="Type a name" aria-label="Find a name" autocomplete="off"><div class="who" role="group" aria-label="Everyone"></div><p class="lead none" hidden>No one by that name yet.</p>', true);
+    var grid = w.querySelector(".who");
+    PEOPLE.forEach(function (person) {
+      var b = document.createElement("button"); b.type = "button"; b.className = "wface"; b.dataset.n = person.name.toLowerCase(); b.dataset.pid = person.id;
+      b.setAttribute("aria-label", person.name + ", " + photoCount(person.items));
+      b.innerHTML = '<i><b aria-hidden="true">' + esc(person.first.charAt(0).toUpperCase()) + '</b></i><span>' + esc(person.first) + '</span>';
+      if (FACES[person.id]) b.querySelector("i").appendChild(faceImg(FACES[person.id]));
+      b.onclick = function () { closeSheetThen(function () { openPerson(person); }); };
+      grid.appendChild(b);
+    });
+    var find = w.querySelector(".find");
+    find.oninput = function () { var q = find.value.toLowerCase().trim(), shown = 0; grid.querySelectorAll(".wface").forEach(function (b) { b.hidden = q && b.dataset.n.indexOf(q) < 0; if (!b.hidden) shown++; }); w.querySelector(".none").hidden = shown > 0; };
+    try { grid.querySelector("button").focus({ preventScroll: true }); } catch (e) {}
+  }
+  /* ---------- Who's this? Unnamed faces anyone in the family can name ---------- */
+  function buildWhosThis(peopleSec) {
+    Witt.unnamed().then(function (list) {
+      if (!list.length) return;
+      var sec = document.createElement("section"); sec.className = "row people whos"; sec.setAttribute("aria-label", "Who's this?");
+      sec.innerHTML = '<div class="rh"><h2>Who\u2019s this?<small>Know them? Tap and type their name</small></h2></div><div class="scroller"></div>' +
+        '<button class="icon-btn arrow l" aria-label="Scroll left">' + ICON.prev + '</button><button class="icon-btn arrow r" aria-label="Scroll right">' + ICON.next + '</button>';
+      var sc = sec.querySelector(".scroller");
+      list.forEach(function (f) {
+        var b = document.createElement("button"); b.type = "button"; b.className = "face q";
+        b.setAttribute("aria-label", "Unnamed person in " + f.n + " photos. Tap to name them.");
+        b.innerHTML = '<i></i><span class="nm">Who\u2019s this?</span><span class="ct">' + plural(f.n) + '</span>';
+        b.querySelector("i").appendChild(faceImg(f.face));
+        b.onclick = function () { openNamer(f, b); };
+        sc.appendChild(b);
+      });
+      sec.querySelector(".arrow.l").onclick = function () { sc.scrollBy({ left: -sc.clientWidth * .8, behavior: "smooth" }); };
+      sec.querySelector(".arrow.r").onclick = function () { sc.scrollBy({ left: sc.clientWidth * .8, behavior: "smooth" }); };
+      var after = document.querySelector(".people:not(.whos)");
+      $("rows").insertBefore(sec, after ? after.nextSibling : $("rows").firstChild);
+    }).catch(function () {});
+  }
+  function openNamer(f, tile) {
+    var names = PEOPLE.map(function (p) { return p.name; });
+    var w = sheet('<h2 class="xd" id="shT">Who&rsquo;s this?</h2><span class="bigface"></span>' +
+      '<p class="lead">Type their first and last name.</p>' +
+      '<input class="find" type="text" placeholder="First and last name" aria-label="Their name" autocomplete="off" autocapitalize="words" autocorrect="off" spellcheck="false" enterkeyhint="done" maxlength="40">' +
+      '<div class="sugs" aria-label="People already on the site"></div><p class="msg" aria-live="polite"></p>' +
+      '<div class="row2"><button class="btn btn-gold go" type="button">Save name</button>' +
+      '<button class="notme skip" type="button">I don&rsquo;t know them</button>' +
+      '<button class="notme hide" type="button">Not a family member (hide this face)</button></div>');
+    w.querySelector(".bigface").appendChild(faceImg(f.face));
+    var input = w.querySelector(".find"), msg = w.querySelector(".msg"), go = w.querySelector(".go"), hideB = w.querySelector(".hide"), sugs = w.querySelector(".sugs");
+    var busy = false, done = false, hideArmed = false;
+    function clean(v) { return v.replace(/[‘’]/g, "'").replace(/[–—]/g, "-").replace(/\s+/g, " ").trim(); }
+    function match(v) { var l = v.toLowerCase(); return PEOPLE.filter(function (p) { return p.name.toLowerCase() === l; })[0]; }
+    function hint() {
+      var v = clean(input.value), l = v.toLowerCase();
+      sugs.innerHTML = "";
+      if (l.length >= 2) names.filter(function (n) { return n.toLowerCase().indexOf(l) > -1 && n.toLowerCase() !== l; }).slice(0, 4).forEach(function (n) {
+        var c = document.createElement("button"); c.type = "button"; c.className = "chip2"; c.textContent = n;
+        c.onclick = function () { input.value = n; hint(); input.focus(); }; sugs.appendChild(c);
+      });
+      var m = match(v);
+      msg.className = "msg ok"; msg.textContent = m ? "This adds these photos to " + m.first + " (already on the site)." : "";
+    }
+    input.addEventListener("input", hint);
+    function send(name, okText) {
+      if (busy || done) return;
+      busy = true; go.disabled = hideB.disabled = input.disabled = true; msg.className = "msg"; msg.textContent = "Saving…";
+      Witt.nameFace(f.id, name).then(function () {
+        done = true; msg.className = "msg ok"; msg.textContent = okText;
+        tile.remove(); var row = document.querySelector(".whos .scroller"); if (row && !row.children.length) row.parentNode.remove();
+        setTimeout(function () { if (w.isConnected) sheetBack(); }, 1800);
+      }).catch(function (e) {
+        busy = false;
+        if (e.code === "already named" || e.code === "gone") { done = true; tile.remove(); msg.className = "msg ok"; msg.textContent = e.message; setTimeout(function () { if (w.isConnected) sheetBack(); }, 1800); return; }
+        go.disabled = hideB.disabled = input.disabled = false; msg.className = "msg"; msg.textContent = e.message;
+      });
+    }
+    go.onclick = function () {
+      var name = clean(input.value);
+      if (!/^\p{L}[\p{L} .'\-]{0,39}$/u.test(name)) { msg.className = "msg"; msg.textContent = "Please type a name using letters."; input.focus(); return; }
+      var m = match(name);
+      send(name, m ? "Thank you! Added to " + m.first + "’s photos." : "Thank you! " + name.split(" ")[0] + " will show up on the site soon.");
+    };
+    w.querySelector(".skip").onclick = sheetBack;
+    hideB.onclick = function () {
+      if (!hideArmed) { hideArmed = true; hideB.textContent = "Tap again to hide this face for everyone"; return; }
+      send("__hide__", "Got it. That face is hidden.");
+    };
+    input.addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); go.onclick(); } });
+    input.addEventListener("focus", function () { setTimeout(function () { try { go.scrollIntoView({ block: "nearest" }); } catch (e) {} }, 350); });
+    try { input.focus({ preventScroll: true }); } catch (e) {}
+  }
   /* wittenauer.family/photos/#person=<id> opens that person's page (used by the home page faces). */
   function personLink(failed) {
+    if (/[#&]people\b/.test(location.hash)) { history.replaceState(null, "", location.pathname + location.search); if (!failed && $("ov").hidden && $("lb").hidden) openEveryone(); return; }
     var m = location.hash.match(/person=([A-Za-z0-9-]+)/); if (!m) return;
     history.replaceState(null, "", location.pathname + location.search);
     if (failed || !$("ov").hidden || !$("lb").hidden) return;
